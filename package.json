@@ -1,0 +1,33 @@
+{
+  "name": "barbershop-monorepo",
+  "version": "1.0.0",
+  "description": "��#\u0000 \u0000b\u0000a\u0000r\u0000b\u0000e\u0000r\u0000s\u0000h\u0000o\u0000p\u0000-\u0000m\u0000o\u0000n\u0000o\u0000r\u0000e\u0000p\u0000o\u0000\r\u0000 \u0000",
+  "main": "index.js",
+  "packageManager": "npm@10.9.2",
+  "scripts": {
+    "dev": "turbo run dev --filter=./apps/*",
+    "build": "turbo run build --filter=./apps/*",
+    "db:generate": "turbo run db:generate --filter=./packages/*",
+    "db:migrate": "turbo run db:migrate --filter=@barbershop/database",
+    "db:studio": "turbo run db:studio --filter=@barbershop/database" 
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WendelTarlley/barbershop-monorepo.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/WendelTarlley/barbershop-monorepo/issues"
+  },
+  "homepage": "https://github.com/WendelTarlley/barbershop-monorepo#readme",
+  "devDependencies": {
+    "turbo": "^2.9.5"
+  },
+  "workspaces":[
+    "apps/*",
+    "packages/*"
+  ]
+}
