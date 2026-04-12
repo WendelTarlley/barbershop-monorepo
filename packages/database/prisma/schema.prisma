@@ -7,126 +7,297 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ─── Enums ────────────────────────────────────────────
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+enum ReservationStatus {
+  ACTIVE
+  EXPIRED
+  USED
+}
+
+enum ScheduleBlockType {
+  VACATION
+  DAY_OFF
+  BREAK
+  HOLIDAY
+  OTHER
+}
+
+// ─── Barbershop ───────────────────────────────────────
+
 model Barbershop {
-  id           String        @id @default(uuid())
+  id           String   @id @default(uuid())
   name         String
-  document     String        @unique
-  createdAt    DateTime      @default(now()) @map("created_at")
+  slug         String   @unique
+  document     String   @unique
+  phone        String?
+  address      String?
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  users        User[]
+  roles        Role[]
+  services     BarbershopService[]
+  workingDays  WorkingDay[]
   appointments Appointment[]
-  barbers      Barber[]
-  barbershopServices     BarbershopService[]
 
   @@map("barbershop")
 }
 
-model Barber {
-  id             String          @id @default(uuid())
-  name           String
-  cpf            String          @unique
-  active         Boolean         @default(true)
-  createdAt      DateTime        @default(now()) @map("created_at")
-  barbershopId   String          @map("barbershop_id")
-  appointments   Appointment[]
-  availabilities Availability[]
-  barbershop     Barbershop      @relation(fields: [barbershopId], references: [id])
-  barbershopServices       BarberService[]
-  blocks         Block[]
-  reservations   Reservation[]
+// ─── Horário base da barbearia ────────────────────────
 
-  @@map("barber")
+model WorkingDay {
+  id           String     @id @default(uuid())
+  weekDay      Int        @map("week_day") // 0 = domingo ... 6 = sábado
+  openTime     String     @map("open_time")  // "09:00"
+  closeTime    String     @map("close_time") // "18:00"
+  active       Boolean    @default(true)
+
+  barbershopId String     @map("barbershop_id")
+  barbershop   Barbershop @relation(fields: [barbershopId], references: [id])
+
+  @@unique([barbershopId, weekDay])
+  @@map("working_day")
 }
 
+// ─── Usuários do sistema ──────────────────────────────
+
+model User {
+  id          String    @id @default(uuid())
+  name        String
+  email       String    @unique
+  cpf         String    @unique
+  password    String?
+  firstAccess Boolean   @default(true) @map("first_access")
+  active      Boolean   @default(true)
+  photoUrl    String?   @map("photo_url")
+  specialty   String?   // relevante quando role = barber
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  barbershopId String     @map("barbershop_id")
+  barbershop   Barbershop @relation(fields: [barbershopId], references: [id])
+
+  roleId       String     @map("role_id")
+  role         Role       @relation(fields: [roleId], references: [id])
+
+  permissions    UserPermission[]
+  services       BarberService[]      // serviços que o barbeiro realiza
+  availability   Availability[]       // horários do barbeiro
+  blocks         Block[]              // bloqueios do barbeiro
+  appointments   Appointment[]        // agendamentos do barbeiro
+
+  reservation    Reservation[]
+  magicLinks MagicLink[]
+
+
+  @@map("user")
+}
+
+// ─── Roles ────────────────────────────────────────────
+
+model Role {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  isSystem    Boolean  @default(false) @map("is_system")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  barbershopId String     @map("barbershop_id")
+  barbershop   Barbershop @relation(fields: [barbershopId], references: [id])
+
+  users       User[]
+  permissions RolePermission[]
+
+  @@map("role")
+}
+
+// ─── Permissions ──────────────────────────────────────
+
+model Permission {
+  id          String   @id @default(uuid())
+  key         String   @unique // "barbers.create", "services.delete"
+  description String?
+  module      String           // "barbers", "services", "schedule"
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  roles RolePermission[]
+  users UserPermission[]
+
+  @@map("permission")
+}
+
+model RolePermission {
+  roleId       String     @map("role_id")
+  permissionId String     @map("permission_id")
+  role         Role       @relation(fields: [roleId], references: [id])
+  permission   Permission @relation(fields: [permissionId], references: [id])
+
+  @@id([roleId, permissionId])
+  @@map("role_permission")
+}
+
+model UserPermission {
+  userId       String     @map("user_id")
+  permissionId String     @map("permission_id")
+  granted      Boolean    @default(true) // false = revoga permissão do role
+  user         User       @relation(fields: [userId], references: [id])
+  permission   Permission @relation(fields: [permissionId], references: [id])
+
+  @@id([userId, permissionId])
+  @@map("user_permission")
+}
+
+// ─── Serviços da barbearia ────────────────────────────
+
+model BarbershopService {
+  id              String     @id @default(uuid())
+  name            String
+  description     String?
+  durationMinutes Int        @map("duration_minutes")
+  price           Decimal    @db.Decimal(10, 2)
+  active          Boolean    @default(true)
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt @map("updated_at")
+
+  barbershopId String     @map("barbershop_id")
+  barbershop   Barbershop @relation(fields: [barbershopId], references: [id])
+
+  barbers      BarberService[]
+  appointments AppointmentService[]
+
+  @@map("barbershop_service")
+}
+
+// ─── Vínculo Barbeiro ↔ Serviço ───────────────────────
+
+model BarberService {
+  id                  String            @id @default(uuid())
+  userId              String            @map("user_id")
+  barbershopServiceId String            @map("barbershop_service_id")
+  user                User              @relation(fields: [userId], references: [id])
+  barbershopService   BarbershopService @relation(fields: [barbershopServiceId], references: [id])
+
+  @@unique([userId, barbershopServiceId])
+  @@map("barber_service")
+}
+
+// ─── Disponibilidade do barbeiro ──────────────────────
+
+model Availability {
+  id        String   @id @default(uuid())
+  weekDay   Int      @map("day_of_week") // 0 = domingo ... 6 = sábado
+  startTime String   @map("start_time")  // "09:00"
+  endTime   String   @map("end_time")    // "18:00"
+
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, weekDay])
+  @@map("availability")
+}
+
+// ─── Bloqueios de horário ─────────────────────────────
+
+model Block {
+  id            String            @id @default(uuid())
+  type          ScheduleBlockType
+  reason        String?
+  startDatetime DateTime          @map("start_datetime")
+  endDatetime   DateTime          @map("end_datetime")
+  allDay        Boolean           @default(false) @map("all_day")
+  createdAt     DateTime          @default(now()) @map("created_at")
+
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@map("block")
+}
+
+// ─── Clientes ─────────────────────────────────────────
+
 model Client {
-  id           String        @id @default(uuid())
-  name         String
-  phone        String
-  email        String?
-  createdAt    DateTime      @default(now()) @map("created_at")
+  id        String   @id @default(uuid())
+  name      String
+  phone     String
+  email     String?
+  createdAt DateTime @default(now()) @map("created_at")
+
   appointments Appointment[]
 
   @@map("client")
 }
 
-model BarbershopService {
-  id                  String               @id @default(uuid())
-  name                String
-  durationMinutes     Int                  @map("duration_minutes")
-  price               Decimal              @db.Decimal(10, 2)
-  barbershopId        String               @map("barbershop_id")
-  appointmentServices AppointmentService[]
-  barberServices      BarberService[]
-  barbershop          Barbershop           @relation(fields: [barbershopId], references: [id])
-
-  @@map("barbershop_service")
-}
-
-model BarberService {
-  id        String  @id @default(uuid())
-  barberId  String  @map("barber_id")
-  barbershopServiceId String  @map("barbershop_service_id")
-  barber    Barber  @relation(fields: [barberId], references: [id])
-  barbershopService   BarbershopService @relation(fields: [barbershopServiceId], references: [id])
-
-  @@map("barber_service")
-}
-
-model Availability {
-  id        String @id @default(uuid())
-  dayOfWeek Int    @map("day_of_week")
-  startTime String @map("start_time")
-  endTime   String @map("end_time")
-  barberId  String @map("barber_id")
-  barber    Barber @relation(fields: [barberId], references: [id])
-
-  @@map("availability")
-}
-
-model Block {
-  id            String   @id @default(uuid())
-  startDatetime DateTime @map("start_datetime")
-  endDatetime   DateTime @map("end_datetime")
-  reason        String
-  barberId      String   @map("barber_id")
-  barber        Barber   @relation(fields: [barberId], references: [id])
-
-  @@map("block")
-}
+// ─── Agendamentos ─────────────────────────────────────
 
 model Appointment {
-  id            String               @id @default(uuid())
-  startDatetime DateTime             @map("start_datetime")
-  endDatetime   DateTime             @map("end_datetime")
-  status        String
-  createdAt     DateTime             @default(now()) @map("created_at")
-  barbershopId  String               @map("barbershop_id")
-  barberId      String               @map("barber_id")
-  clientId      String               @map("client_id")
-  barber        Barber               @relation(fields: [barberId], references: [id])
-  barbershop    Barbershop           @relation(fields: [barbershopId], references: [id])
-  client        Client               @relation(fields: [clientId], references: [id])
-  services      AppointmentService[]
+  id            String            @id @default(uuid())
+  startDatetime DateTime          @map("start_datetime")
+  endDatetime   DateTime          @map("end_datetime")
+  status        AppointmentStatus @default(PENDING)
+  createdAt     DateTime          @default(now()) @map("created_at")
+
+  barbershopId String     @map("barbershop_id")
+  barbershop   Barbershop @relation(fields: [barbershopId], references: [id])
+
+  userId   String @map("user_id") // barbeiro
+  user     User   @relation(fields: [userId], references: [id])
+
+  clientId String @map("client_id")
+  client   Client @relation(fields: [clientId], references: [id])
+
+  services AppointmentService[]
 
   @@map("appointment")
 }
 
+// ─── Serviços do agendamento ──────────────────────────
+
 model AppointmentService {
-  id            String      @id @default(uuid())
-  appointmentId String      @map("appointment_id")
-  barbershopServiceId     String      @map("barbershop_service_id")
-  appointment   Appointment @relation(fields: [appointmentId], references: [id])
-  barbershopServices       BarbershopService     @relation(fields: [barbershopServiceId], references: [id])
+  id                  String            @id @default(uuid())
+  appointmentId       String            @map("appointment_id")
+  barbershopServiceId String            @map("barbershop_service_id")
+  appointment         Appointment       @relation(fields: [appointmentId], references: [id])
+  barbershopService   BarbershopService @relation(fields: [barbershopServiceId], references: [id])
 
   @@map("appointment_service")
 }
 
+// ─── Reservas temporárias ─────────────────────────────
+
 model Reservation {
-  id            String   @id @default(uuid())
-  startDatetime DateTime @map("start_datetime")
-  endDatetime   DateTime @map("end_datetime")
-  expiresAt     DateTime @map("expires_at")
-  status        String
-  barberId      String   @map("barber_id")
-  barber        Barber   @relation(fields: [barberId], references: [id])
+  id            String            @id @default(uuid())
+  startDatetime DateTime          @map("start_datetime")
+  endDatetime   DateTime          @map("end_datetime")
+  expiresAt     DateTime          @map("expires_at")
+  status        ReservationStatus @default(ACTIVE)
+  createdAt     DateTime          @default(now()) @map("created_at")
+
+  userId   String @map("user_id") 
+  user     User   @relation(fields: [userId], references: [id])
 
   @@map("reservation")
 }
+
+model MagicLink {
+  id        String    @id @default(uuid())
+  token     String    @unique
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  userId    String    @map("user_id")
+  user      User      @relation(fields: [userId], references: [id])
+
+  @@map("magic_link")
+}
+
