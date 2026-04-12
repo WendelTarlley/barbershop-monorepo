@@ -9,6 +9,12 @@ config({
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  await app.listen(process.env.PORT ?? 3000);
+  app.enableCors({
+    origin: process.env.APP_URL || "http://localhost:3000",
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  })
+  await app.listen(process.env.API_PORT ?? 3000);
 }
 bootstrap();

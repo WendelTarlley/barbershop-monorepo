@@ -3,29 +3,49 @@
   "ui": "tui",
   "tasks": {
     "db:generate": {
-      "outputs": ["node_modules/.prisma/**"]
+      "outputs": [
+        "node_modules/.prisma/**"
+      ]
     },
     "build": {
-      "dependsOn": ["^build", "^db:generate"],
-      "outputs": ["dist/**", ".next/**", "!.next/cache/**"]
+      "dependsOn": [
+        "^build",
+        "^db:generate"
+      ],
+      "outputs": [
+        "dist/**",
+        ".next/**",
+        "!.next/cache/**"
+      ]
     },
     "dev": {
-      "dependsOn": ["^db:generate"],
+      "dependsOn": [
+        "^db:generate"
+      ],
       "cache": false,
       "persistent": true
     },
     "lint": {
-      "dependsOn": ["^lint"]
+      "dependsOn": [
+        "^lint"
+      ]
     },
     "test": {
-      "dependsOn": ["^build"],
-      "outputs": ["coverage/**"]
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "coverage/**"
+      ]
     },
     "db:migrate": {
       "cache": false
     },
     "db:studio": {
       "cache": false,
+      "persistent": true
+    },
+    "debug": {
       "persistent": true
     }
   }

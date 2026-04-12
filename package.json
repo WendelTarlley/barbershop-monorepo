@@ -13,7 +13,8 @@
     "build": "turbo run build --filter=./apps/*",
     "db:generate": "turbo run db:generate --filter=./packages/*",
     "db:migrate": "turbo run db:migrate --filter=@barbershop/database",
-    "db:studio": "turbo run db:studio --filter=@barbershop/database"
+    "db:studio": "turbo run db:studio --filter=@barbershop/database",
+    "debug": "turbo run debug --parallel"
   },
   "repository": {
     "type": "git",
