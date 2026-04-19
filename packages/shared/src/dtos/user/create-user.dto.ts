@@ -1,8 +1,9 @@
 export class CreateUserDto {
-    name!: string;
-    cpf!: string;
-    email!: string;
-    barbershopId!: string;
-    roleId!: string;
-    permissionId!: string;
+  name!: string;
+  email!: string;
+  roleId!: string;
+  specialty?: string;
+  active?: boolean;
+  cpf?: string;
+  photoUrl?: string;
 }

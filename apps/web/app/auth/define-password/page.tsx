@@ -1,7 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+
+import { REFRESH_TOKEN_COOKIE, TOKEN_COOKIE } from "@/lib/auth";
 import { useAuth } from "@/hooks/useAuth";
+import { apiClient } from "@/lib/apiClient";
 
 type FieldError = { password?: string; confirm?: string; api?: string };
 
@@ -15,7 +18,7 @@ function getPasswordStrength(pwd: string): { score: number; label: string; color
 
   const map = [
     { score: 1, label: "Fraca", color: "#ef4444" },
-    { score: 2, label: "Razoável", color: "#f97316" },
+    { score: 2, label: "Razoavel", color: "#f97316" },
     { score: 3, label: "Boa", color: "#eab308" },
     { score: 4, label: "Forte", color: "#22c55e" },
   ];
@@ -23,7 +26,7 @@ function getPasswordStrength(pwd: string): { score: number; label: string; color
 }
 
 export default function SetPasswordPage() {
-  const { saveTokenAndRedirect } = useAuth();
+  const { saveAuthAndRedirect } = useAuth();
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [showPwd, setShowPwd] = useState(false);
@@ -43,7 +46,7 @@ export default function SetPasswordPage() {
     const errs: FieldError = {};
     if (password.length < 8) errs.password = "A senha deve ter ao menos 8 caracteres.";
     else if (strength.score < 2) errs.password = "Escolha uma senha mais forte.";
-    if (confirm !== password) errs.confirm = "As senhas não conferem.";
+    if (confirm !== password) errs.confirm = "As senhas nao conferem.";
     setErrors(errs);
     return Object.keys(errs).length === 0;
   }
@@ -55,24 +58,26 @@ export default function SetPasswordPage() {
 
     const tempToken = sessionStorage.getItem("@barber:temp_token");
 
+    if (!tempToken) {
+      setTokenMissing(true);
+      setLoading(false);
+      return;
+    }
+
     try {
-      const response = await fetch(
-        `http://localhost:3000/auth/set-password`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${tempToken}`,
-          },
-          body: JSON.stringify({ password }),
-        }
-      );
+      const response = await apiClient(`http://localhost:3000/auth/define-password`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ token: tempToken, password }),
+      });
 
       const data = await response.json();
 
       if (!response.ok) {
         if (response.status === 401) {
-          setErrors({ api: "Sessão inválida. Acesse o link novamente." });
+          setErrors({ api: "Sessao invalida. Acesse o link novamente." });
         } else {
           setErrors({ api: "Erro ao salvar senha. Tente novamente." });
         }
@@ -80,9 +85,12 @@ export default function SetPasswordPage() {
       }
 
       sessionStorage.removeItem("@barber:temp_token");
-      saveTokenAndRedirect(data.access_token);
+      saveAuthAndRedirect({
+        [TOKEN_COOKIE]: data.accessToken,
+        [REFRESH_TOKEN_COOKIE]: data.refreshToken,
+      });
     } catch {
-      setErrors({ api: "Erro de conexão. Verifique sua internet." });
+      setErrors({ api: "Erro de conexao. Verifique sua internet." });
     } finally {
       setLoading(false);
     }
@@ -94,7 +102,7 @@ export default function SetPasswordPage() {
         <div className="card">
           <div className="logo-wrap"><ScissorIcon /></div>
           <div className="error-box">
-            <p className="error-title">Sessão não encontrada</p>
+            <p className="error-title">Sessao nao encontrada</p>
             <p className="error-desc">Acesse o link enviado ao seu e-mail para continuar.</p>
             <a href="/auth/login" className="btn-secondary">Ir para o login</a>
           </div>
@@ -107,18 +115,15 @@ export default function SetPasswordPage() {
   return (
     <main className="screen">
       <div className="card">
-        {/* Header */}
         <div className="logo-wrap"><ScissorIcon /></div>
         <div className="header">
           <h1 className="page-title">Cadastrar senha</h1>
           <p className="page-sub">Defina a senha para acessar sua barbearia</p>
         </div>
 
-        {/* Seção */}
         <div className="section">
-          <p className="section-label">Segurança</p>
+          <p className="section-label">Seguranca</p>
 
-          {/* Nova senha */}
           <div className="field-group">
             <label className="field-label">Nova Senha</label>
             <div className={`input-wrap ${errors.password ? "has-error" : ""}`}>
@@ -127,7 +132,7 @@ export default function SetPasswordPage() {
               </span>
               <input
                 type={showPwd ? "text" : "password"}
-                placeholder="Mínimo 8 caracteres"
+                placeholder="Minimo 8 caracteres"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="field-input"
@@ -143,7 +148,6 @@ export default function SetPasswordPage() {
               </button>
             </div>
 
-            {/* Barra de força */}
             {password.length > 0 && (
               <div className="strength-row">
                 <div className="strength-bar">
@@ -165,7 +169,6 @@ export default function SetPasswordPage() {
             {errors.password && <p className="field-error">{errors.password}</p>}
           </div>
 
-          {/* Confirmar senha */}
           <div className="field-group">
             <label className="field-label">Confirmar Senha</label>
             <div className={`input-wrap ${errors.confirm ? "has-error" : ""}`}>
@@ -193,14 +196,12 @@ export default function SetPasswordPage() {
           </div>
         </div>
 
-        {/* API error toast */}
         {errors.api && (
           <div className="toast-error" role="alert">
             {errors.api}
           </div>
         )}
 
-        {/* Botão */}
         <button
           className="btn-primary"
           onClick={handleSubmit}
@@ -216,15 +217,12 @@ export default function SetPasswordPage() {
   );
 }
 
-// ─── Styles ────────────────────────────────────────────────────────────────
-
 function Styles() {
   return (
     <style jsx global>{`
       @import url("https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=DM+Sans:wght@400;500&display=swap");
 
       *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
       body { background: #0e0e0e; }
 
       .screen {
@@ -299,7 +297,6 @@ function Styles() {
       }
 
       .field-group { display: flex; flex-direction: column; gap: 0.4rem; }
-
       .field-label { font-size: 0.78rem; color: #888; }
 
       .input-wrap {
@@ -369,11 +366,7 @@ function Styles() {
       }
 
       .strength-label { font-size: 0.72rem; font-weight: 500; min-width: 44px; }
-
-      .field-error {
-        font-size: 0.75rem;
-        color: #f87171;
-      }
+      .field-error { font-size: 0.75rem; color: #f87171; }
 
       .toast-error {
         width: 100%;
@@ -452,8 +445,6 @@ function Styles() {
   );
 }
 
-// ─── Icons ─────────────────────────────────────────────────────────────────
-
 function ScissorIcon() {
   return (
     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#F5A623" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -492,3 +483,4 @@ function EyeOffIcon() {
     </svg>
   );
 }
+

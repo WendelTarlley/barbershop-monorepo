@@ -151,7 +151,7 @@ export class AuthService {
       data: { token, expiresAt, userId: user.id },
     })
 
-    const link = `${process.env.APP_URL}/auth/verify?token=${token}`
+    const link = `${process.env.APP_URL}/auth/magic-link?token=${token}`
 
     await this.mail.sendMagicLink({
       to: user.email,

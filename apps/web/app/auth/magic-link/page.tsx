@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { apiClient } from "@/lib/apiClient";
 
 type Status = "loading" | "error_expired" | "error_used" | "error_generic";
 
@@ -18,15 +19,12 @@ export default function MagicLinkPage() {
       return;
     }
 
+    const magicToken = token;
+
     async function validateMagicLink() {
       try {
-        const response = await fetch(
-          `http://localhost:3000/auth/magic-link`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ token }),
-          }
+        const response = await apiClient(
+          `/auth/verify-magic-link?token=${encodeURIComponent(magicToken)}`
         );
 
         const data = await response.json();
@@ -43,8 +41,8 @@ export default function MagicLinkPage() {
         }
 
         // Armazena token temporário e redireciona para cadastro de senha
-        sessionStorage.setItem("@barber:temp_token", data.access_token);
-        router.replace("/auth/set-password");
+        sessionStorage.setItem("@barber:temp_token", data.tempToken);
+        router.replace("/auth/define-password");
       } catch {
         setStatus("error_generic");
       }

@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { REFRESH_TOKEN_COOKIE, TOKEN_COOKIE } from "@/lib/auth";
+import { apiClient } from "@/lib/apiClient";
 
 type FieldError = { email?: string; password?: string; api?: string };
 
@@ -10,7 +12,7 @@ function validateEmail(email: string): boolean {
 }
 
 export default function LoginPage() {
-  const { saveTokenAndRedirect } = useAuth();
+  const { saveAuthAndRedirect } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPwd, setShowPwd] = useState(false);
@@ -31,8 +33,8 @@ export default function LoginPage() {
     setErrors({});
 
     try {
-      const response = await fetch(
-        `http://localhost:3000/auth/login`,
+      const response = await apiClient(
+        `/auth/login`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -50,9 +52,10 @@ export default function LoginPage() {
         }
         return;
       }
-      debugger
-      saveTokenAndRedirect("@barber:token", data.accessToken);
-      saveTokenAndRedirect("@barber:refreshToken", data.refreshToken);
+      saveAuthAndRedirect({
+        [TOKEN_COOKIE]: data.accessToken,
+        [REFRESH_TOKEN_COOKIE]: data.refreshToken,
+      });
     } catch {
       setErrors({ api: "Erro de conexão. Verifique sua internet." });
     } finally {

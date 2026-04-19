@@ -25,6 +25,7 @@
   "dependencies": {
     "@barbershop/database": "*",
     "@barbershop/shared": "*",
+    "@fastify/request-context": "^6.2.1",
     "@nestjs/common": "^11.0.1",
     "@nestjs/core": "^11.0.1",
     "@nestjs/jwt": "^11.0.2",
@@ -33,6 +34,7 @@
     "@nestjs/platform-express": "^11.0.1",
     "argon2": "^0.44.0",
     "class-validator": "^0.15.1",
+    "nestjs-cls": "^6.2.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.2.2",

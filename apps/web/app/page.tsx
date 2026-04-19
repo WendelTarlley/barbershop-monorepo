@@ -1,11 +1,12 @@
 import GestaoCard from "@/components/GestãoCard";
+import { requireAuth } from "@/lib/serverAuth";
 
 const menuItems = [
   {
     icon: "👤",
     label: "Barbeiros",
     sub: "3 Profissionais",
-    href: "/barber",
+    href: "/barbers",
   },
   {
     icon: "✂️",
@@ -27,10 +28,13 @@ const menuItems = [
   },
 ];
 
-export default function Home() {
+export default async function Home() {
+  await requireAuth("/");
+
   return (
     <main className="flex items-center justify-center bg-zinc-950">
       <GestaoCard items={menuItems} />
     </main>
   );
 }
+
