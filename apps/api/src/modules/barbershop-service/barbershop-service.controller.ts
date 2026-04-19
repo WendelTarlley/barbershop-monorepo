@@ -17,18 +17,23 @@ export class BarbershopServiceController {
     return this.barbershopServiceService.findAll();
   }
 
+  @Get('barbershop/:barbershopId')
+  findAllByBarbershopId(@Param('barbershopId') barbershopId: string) {
+    return this.barbershopServiceService.findAllByBarbershopId(barbershopId);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.barbershopServiceService.findOne(+id);
+    return this.barbershopServiceService.findOne(id);
   }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateBarbershopServiceDto: UpdateBarbershopServiceDto) {
-    return this.barbershopServiceService.update(+id, updateBarbershopServiceDto);
+    return this.barbershopServiceService.update(id, updateBarbershopServiceDto);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.barbershopServiceService.remove(+id);
+    return this.barbershopServiceService.remove(id);
   }
 }

@@ -14,7 +14,7 @@ async function bootstrap() {
     origin: process.env.APP_URL || 'http://localhost:3000',
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Barbershop-Id'],
-    allowedMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   });
   await app.listen(process.env.API_PORT ?? 3000);
 }

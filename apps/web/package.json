@@ -6,7 +6,8 @@
     "dev": "next dev --port 3001",
     "debug": "set NODE_OPTIONS=--inspect=9230 && next dev --port 3001",
     "build": "next build",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "jest --config jest.config.js"
   },
   "dependencies": {
     "next": "16.2.3",
