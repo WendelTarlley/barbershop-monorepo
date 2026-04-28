@@ -1,16 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
-import { REFRESH_TOKEN_COOKIE, TOKEN_COOKIE } from "@/lib/auth";
 import { useAuth } from "@/hooks/useAuth";
 import { apiClient } from "@/lib/apiClient";
+import { REFRESH_TOKEN_COOKIE, TOKEN_COOKIE } from "@/lib/auth";
 
+type Status = "loading" | "form" | "error_expired" | "error_used" | "error_generic";
 type FieldError = { password?: string; confirm?: string; api?: string };
 type ApiError = { status?: number; message?: string; data?: unknown };
 
 function getPasswordStrength(pwd: string): { score: number; label: string; color: string } {
   if (pwd.length === 0) return { score: 0, label: "", color: "transparent" };
+
   let score = 0;
   if (pwd.length >= 8) score++;
   if (/[A-Z]/.test(pwd)) score++;
@@ -23,50 +26,101 @@ function getPasswordStrength(pwd: string): { score: number; label: string; color
     { score: 3, label: "Boa", color: "#eab308" },
     { score: 4, label: "Forte", color: "#22c55e" },
   ];
+
   return map[score - 1] ?? { score: 0, label: "", color: "transparent" };
 }
 
-export default function SetPasswordPage() {
+function mapLinkError(data: unknown): Exclude<Status, "loading" | "form"> {
+  const message =
+    typeof data === "object" && data !== null && "message" in data
+      ? Array.isArray((data as { message?: unknown }).message)
+        ? (data as { message?: unknown[] }).message?.[0]
+        : (data as { message?: unknown }).message
+      : undefined;
+
+  if (message === "Link expired") {
+    return "error_expired";
+  }
+
+  if (message === "Link already used") {
+    return "error_used";
+  }
+
+  return "error_generic";
+}
+
+export default function ResetPasswordPage() {
+  const searchParams = useSearchParams();
   const { saveAuthAndRedirect } = useAuth();
+  const [status, setStatus] = useState<Status>("loading");
+  const [tempToken, setTempToken] = useState<string | null>(null);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [showPwd, setShowPwd] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [errors, setErrors] = useState<FieldError>({});
-  const [loading, setLoading] = useState(false);
-  const [tokenMissing, setTokenMissing] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  const strength = getPasswordStrength(password);
+  const strength = useMemo(() => getPasswordStrength(password), [password]);
 
   useEffect(() => {
-    const token = sessionStorage.getItem("@barber:temp_token");
-    if (!token) setTokenMissing(true);
-  }, []);
+    const token = searchParams.get("token");
 
-  function validate(): boolean {
-    const errs: FieldError = {};
-    if (password.length < 8) errs.password = "A senha deve ter ao menos 8 caracteres.";
-    else if (strength.score < 2) errs.password = "Escolha uma senha mais forte.";
-    if (confirm !== password) errs.confirm = "As senhas nao conferem.";
-    setErrors(errs);
-    return Object.keys(errs).length === 0;
-  }
-
-  async function handleSubmit() {
-    if (!validate()) return;
-    setLoading(true);
-    setErrors({});
-
-    const tempToken = sessionStorage.getItem("@barber:temp_token");
-
-    if (!tempToken) {
-      setTokenMissing(true);
-      setLoading(false);
+    if (!token) {
+      setStatus("error_generic");
       return;
     }
 
+    const resetToken = token;
+
+    async function validateLink() {
+      try {
+        const data = await apiClient(
+          `/auth/verify-reset-password?token=${encodeURIComponent(resetToken)}`,
+        );
+
+        setTempToken(data.tempToken);
+        setStatus("form");
+      } catch (error) {
+        const apiError = error as ApiError;
+
+        if (apiError.status) {
+          setStatus(mapLinkError(apiError.data));
+          return;
+        }
+
+        setStatus("error_generic");
+      }
+    }
+
+    validateLink();
+  }, [searchParams]);
+
+  function validate(): boolean {
+    const nextErrors: FieldError = {};
+
+    if (password.length < 8) {
+      nextErrors.password = "A senha deve ter ao menos 8 caracteres.";
+    } else if (strength.score < 2) {
+      nextErrors.password = "Escolha uma senha mais forte.";
+    }
+
+    if (confirm !== password) {
+      nextErrors.confirm = "As senhas nao conferem.";
+    }
+
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  }
+
+  async function handleSubmit() {
+    if (!validate() || !tempToken) return;
+
+    setSaving(true);
+    setErrors({});
+
     try {
-      const data = await apiClient(`/auth/define-password`, {
+      const data = await apiClient("/auth/reset-password", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -74,7 +128,6 @@ export default function SetPasswordPage() {
         body: JSON.stringify({ token: tempToken, password }),
       });
 
-      sessionStorage.removeItem("@barber:temp_token");
       saveAuthAndRedirect({
         [TOKEN_COOKIE]: data.accessToken,
         [REFRESH_TOKEN_COOKIE]: data.refreshToken,
@@ -83,30 +136,74 @@ export default function SetPasswordPage() {
       const apiError = error as ApiError;
 
       if (apiError.status === 401) {
-        setErrors({ api: "Sessao invalida. Acesse o link novamente." });
+        setErrors({ api: "Sessao invalida. Solicite um novo link." });
         return;
       }
 
       if (apiError.status) {
-        setErrors({ api: "Erro ao salvar senha. Tente novamente." });
+        setErrors({ api: "Nao foi possivel redefinir a senha. Tente novamente." });
         return;
       }
 
       setErrors({ api: "Erro de conexao. Verifique sua internet." });
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   }
 
-  if (tokenMissing) {
+  if (status === "loading") {
     return (
       <main className="screen">
         <div className="card">
-          <div className="logo-wrap"><ScissorIcon /></div>
-          <div className="error-box">
-            <p className="error-title">Sessao nao encontrada</p>
-            <p className="error-desc">Acesse o link enviado ao seu e-mail para continuar.</p>
-            <a href="/auth/login" className="btn-secondary">Ir para o login</a>
+          <div className="logo-wrap">
+            <ScissorIcon />
+          </div>
+          <div className="content">
+            <div className="spinner" aria-label="Carregando" />
+            <p className="title">Validando seu link...</p>
+            <p className="subtitle">Isso leva so alguns segundos.</p>
+          </div>
+        </div>
+        <Styles />
+      </main>
+    );
+  }
+
+  if (status !== "form") {
+    const copy: Record<Exclude<Status, "loading" | "form">, { title: string; description: string; ctaHref: string; ctaLabel: string }> = {
+      error_expired: {
+        title: "Link expirado",
+        description: "Este link nao e mais valido. Solicite um novo para continuar.",
+        ctaHref: "/auth/forgot-password",
+        ctaLabel: "Solicitar novo link",
+      },
+      error_used: {
+        title: "Link ja utilizado",
+        description: "Este link ja foi usado anteriormente. Voce pode fazer login com a nova senha ou solicitar outro.",
+        ctaHref: "/auth/login",
+        ctaLabel: "Ir para o login",
+      },
+      error_generic: {
+        title: "Algo deu errado",
+        description: "Nao foi possivel validar seu link de redefinicao. Tente novamente mais tarde.",
+        ctaHref: "/auth/forgot-password",
+        ctaLabel: "Tentar novamente",
+      },
+    };
+
+    return (
+      <main className="screen">
+        <div className="card">
+          <div className="logo-wrap">
+            <ScissorIcon />
+          </div>
+          <div className="content">
+            <div className="error-icon">!</div>
+            <p className="title">{copy[status].title}</p>
+            <p className="subtitle">{copy[status].description}</p>
+            <a href={copy[status].ctaHref} className="btn-link">
+              {copy[status].ctaLabel}
+            </a>
           </div>
         </div>
         <Styles />
@@ -117,17 +214,20 @@ export default function SetPasswordPage() {
   return (
     <main className="screen">
       <div className="card">
-        <div className="logo-wrap"><ScissorIcon /></div>
+        <div className="logo-wrap">
+          <ScissorIcon />
+        </div>
+
         <div className="header">
-          <h1 className="page-title">Cadastrar senha</h1>
-          <p className="page-sub">Defina a senha para acessar sua barbearia</p>
+          <h1 className="page-title">Redefinir senha</h1>
+          <p className="page-sub">Escolha uma nova senha para voltar ao painel.</p>
         </div>
 
         <div className="section">
           <p className="section-label">Seguranca</p>
 
           <div className="field-group">
-            <label className="field-label">Nova Senha</label>
+            <label className="field-label">Nova senha</label>
             <div className={`input-wrap ${errors.password ? "has-error" : ""}`}>
               <span className="input-icon">
                 <LockIcon />
@@ -143,7 +243,7 @@ export default function SetPasswordPage() {
               <button
                 type="button"
                 className="eye-btn"
-                onClick={() => setShowPwd((v) => !v)}
+                onClick={() => setShowPwd((value) => !value)}
                 aria-label={showPwd ? "Ocultar senha" : "Mostrar senha"}
               >
                 {showPwd ? <EyeOffIcon /> : <EyeIcon />}
@@ -153,12 +253,12 @@ export default function SetPasswordPage() {
             {password.length > 0 && (
               <div className="strength-row">
                 <div className="strength-bar">
-                  {[1, 2, 3, 4].map((s) => (
+                  {[1, 2, 3, 4].map((segment) => (
                     <div
-                      key={s}
+                      key={segment}
                       className="strength-seg"
                       style={{
-                        background: strength.score >= s ? strength.color : "#2a2a2a",
+                        background: strength.score >= segment ? strength.color : "#2a2a2a",
                       }}
                     />
                   ))}
@@ -168,18 +268,19 @@ export default function SetPasswordPage() {
                 </span>
               </div>
             )}
+
             {errors.password && <p className="field-error">{errors.password}</p>}
           </div>
 
           <div className="field-group">
-            <label className="field-label">Confirmar Senha</label>
+            <label className="field-label">Confirmar senha</label>
             <div className={`input-wrap ${errors.confirm ? "has-error" : ""}`}>
               <span className="input-icon">
                 <LockIcon />
               </span>
               <input
                 type={showConfirm ? "text" : "password"}
-                placeholder="Repita a senha"
+                placeholder="Repita a nova senha"
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
                 className="field-input"
@@ -188,7 +289,7 @@ export default function SetPasswordPage() {
               <button
                 type="button"
                 className="eye-btn"
-                onClick={() => setShowConfirm((v) => !v)}
+                onClick={() => setShowConfirm((value) => !value)}
                 aria-label={showConfirm ? "Ocultar senha" : "Mostrar senha"}
               >
                 {showConfirm ? <EyeOffIcon /> : <EyeIcon />}
@@ -207,10 +308,10 @@ export default function SetPasswordPage() {
         <button
           className="btn-primary"
           onClick={handleSubmit}
-          disabled={loading}
-          aria-busy={loading}
+          disabled={saving}
+          aria-busy={saving}
         >
-          {loading ? <span className="spinner" /> : "Finalizar Cadastro"}
+          {saving ? <span className="spinner spinner-dark" /> : "Salvar nova senha"}
         </button>
       </div>
 
@@ -298,7 +399,7 @@ function Styles() {
         text-transform: uppercase;
       }
 
-      .field-group { display: flex; flex-direction: column; gap: 0.4rem; }
+      .field-group { display: flex; flex-direction: column; gap: 0.4rem; width: 100%; }
       .field-label { font-size: 0.78rem; color: #888; }
 
       .input-wrap {
@@ -403,31 +504,23 @@ function Styles() {
       .btn-primary:active:not(:disabled) { transform: scale(0.98); }
       .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 
-      .btn-secondary {
-        display: inline-block;
-        padding: 0.65rem 1.5rem;
-        border: 1px solid #F5A623;
-        color: #F5A623;
-        border-radius: 10px;
-        font-size: 0.875rem;
-        text-decoration: none;
-        transition: background 0.15s;
-      }
-
-      .btn-secondary:hover { background: rgba(245,166,35,0.1); }
-
       .spinner {
         width: 20px;
         height: 20px;
-        border: 2px solid rgba(0,0,0,0.3);
-        border-top-color: #0e0e0e;
+        border: 2px solid rgba(245,166,35,0.22);
+        border-top-color: #F5A623;
         border-radius: 50%;
         animation: spin 0.7s linear infinite;
       }
 
+      .spinner-dark {
+        border-color: rgba(0,0,0,0.25);
+        border-top-color: #0e0e0e;
+      }
+
       @keyframes spin { to { transform: rotate(360deg); } }
 
-      .error-box {
+      .content {
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -435,14 +528,47 @@ function Styles() {
         text-align: center;
       }
 
-      .error-title {
+      .title {
         font-family: "Syne", sans-serif;
-        font-size: 1.1rem;
+        font-size: 1.2rem;
         font-weight: 600;
         color: #f0f0f0;
       }
 
-      .error-desc { font-size: 0.875rem; color: #666; line-height: 1.5; }
+      .subtitle {
+        font-size: 0.875rem;
+        color: #888;
+        line-height: 1.6;
+      }
+
+      .error-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: #3a1a1a;
+        border: 1px solid #7a2020;
+        color: #f87171;
+        font-size: 20px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 0.5rem;
+      }
+
+      .btn-link {
+        margin-top: 0.5rem;
+        padding: 0.65rem 1.5rem;
+        background: #F5A623;
+        color: #0e0e0e;
+        border-radius: 10px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        text-decoration: none;
+        transition: opacity 0.15s;
+      }
+
+      .btn-link:hover { opacity: 0.88; }
     `}</style>
   );
 }
@@ -450,7 +576,8 @@ function Styles() {
 function ScissorIcon() {
   return (
     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#F5A623" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="6" cy="6" r="3" /><circle cx="6" cy="18" r="3" />
+      <circle cx="6" cy="6" r="3" />
+      <circle cx="6" cy="18" r="3" />
       <line x1="20" y1="4" x2="8.12" y2="15.88" />
       <line x1="14.47" y1="14.48" x2="20" y2="20" />
       <line x1="8.12" y1="8.12" x2="12" y2="12" />

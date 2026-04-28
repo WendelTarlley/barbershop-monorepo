@@ -5,6 +5,26 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { apiClient } from "@/lib/apiClient";
 
 type Status = "loading" | "error_expired" | "error_used" | "error_generic";
+type ApiError = { status?: number; message?: string; data?: unknown };
+
+function mapLinkError(data: unknown): Exclude<Status, "loading"> {
+  const message =
+    typeof data === "object" && data !== null && "message" in data
+      ? Array.isArray((data as { message?: unknown }).message)
+        ? (data as { message?: unknown[] }).message?.[0]
+        : (data as { message?: unknown }).message
+      : undefined;
+
+  if (message === "Link expired") {
+    return "error_expired";
+  }
+
+  if (message === "Link already used") {
+    return "error_used";
+  }
+
+  return "error_generic";
+}
 
 export default function MagicLinkPage() {
   const router = useRouter();
@@ -23,27 +43,20 @@ export default function MagicLinkPage() {
 
     async function validateMagicLink() {
       try {
-        const response = await apiClient(
-          `/auth/verify-magic-link?token=${encodeURIComponent(magicToken)}`
+        const data = await apiClient(
+          `/auth/verify-magic-link?token=${encodeURIComponent(magicToken)}`,
         );
 
-        const data = await response.json();
+        sessionStorage.setItem("@barber:temp_token", data.tempToken);
+        router.replace("/auth/define-password");
+      } catch (error) {
+        const apiError = error as ApiError;
 
-        if (!response.ok) {
-          if (data.error === "expired") {
-            setStatus("error_expired");
-          } else if (data.error === "already_used") {
-            setStatus("error_used");
-          } else {
-            setStatus("error_generic");
-          }
+        if (apiError.status) {
+          setStatus(mapLinkError(apiError.data));
           return;
         }
 
-        // Armazena token temporário e redireciona para cadastro de senha
-        sessionStorage.setItem("@barber:temp_token", data.tempToken);
-        router.replace("/auth/define-password");
-      } catch {
         setStatus("error_generic");
       }
     }
@@ -54,22 +67,22 @@ export default function MagicLinkPage() {
   const errors: Record<Exclude<Status, "loading">, { title: string; description: string }> = {
     error_expired: {
       title: "Link expirado",
-      description: "Este link de acesso não é mais válido. Solicite um novo pelo suporte.",
+      description: "Este link de acesso nÃ£o Ã© mais vÃ¡lido. Solicite um novo pelo suporte.",
     },
     error_used: {
-      title: "Link já utilizado",
-      description: "Este link já foi usado anteriormente. Faça login com sua senha.",
+      title: "Link jÃ¡ utilizado",
+      description: "Este link jÃ¡ foi usado anteriormente. FaÃ§a login com sua senha.",
     },
     error_generic: {
       title: "Algo deu errado",
-      description: "Não foi possível validar seu acesso. Tente novamente ou contate o suporte.",
+      description: "NÃ£o foi possÃ­vel validar seu acesso. Tente novamente ou contate o suporte.",
     },
   };
 
   return (
     <main className="screen">
       <div className="card">
-        {/* Logo / Ícone */}
+        {/* Logo / Ãcone */}
         <div className="logo-wrap">
           <ScissorIcon />
         </div>

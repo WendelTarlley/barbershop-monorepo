@@ -13,9 +13,10 @@ const PUBLIC_ROUTES = [
   "/auth/magic-link",
   "/auth/define-password",
   "/auth/forgot-password",
+  "/auth/reset-password",
 ];
 
-const TEMP_TOKEN_ROUTES = ["/auth/define-password"];
+const TEMP_TOKEN_ROUTES = ["/auth/define-password", "/auth/reset-password"];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
