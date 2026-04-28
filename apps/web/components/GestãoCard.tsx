@@ -1,5 +1,7 @@
+import { ReactNode } from "react"
+
 type MenuItem = {
-  icon: string
+  icon: ReactNode
   label: string
   sub: string
   href: string
@@ -10,11 +12,14 @@ type GestaoCardProps = {
   items: MenuItem[]
 }
 
-export default function GestaoCard({ title = "Gestão da Barbearia", items }: GestaoCardProps) {
+export default function GestaoCard({
+  title = "Gestao da Barbearia",
+  items,
+}: GestaoCardProps) {
   return (
-    <div className="bg-zinc-900 rounded-xl p-4 max-w-sm mx-auto">
-      <h2 className="text-amber-400 font-semibold text-base mb-4">
-       {title}
+    <div className="mx-auto max-w-sm rounded-xl bg-zinc-900 p-4">
+      <h2 className="mb-4 text-base font-semibold text-amber-400">
+        {title}
       </h2>
 
       <div className="grid grid-cols-2 gap-3">
@@ -22,16 +27,20 @@ export default function GestaoCard({ title = "Gestão da Barbearia", items }: Ge
           <a
             key={item.label}
             href={item.href}
-            className="bg-zinc-800 rounded-xl p-5 flex flex-col items-center gap-2 hover:bg-zinc-700 transition-colors"
+            className="flex flex-col items-center gap-2 rounded-xl bg-zinc-800 p-5 transition-colors hover:bg-zinc-700"
           >
-            <span className="text-3xl">{item.icon}</span>
-            <span className="text-amber-400 font-semibold text-sm text-center">
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-zinc-900 text-amber-400">
+              {item.icon}
+            </span>
+            <span className="text-center text-sm font-semibold text-amber-400">
               {item.label}
             </span>
-            <span className="text-zinc-400 text-xs text-center">{item.sub}</span>
+            <span className="text-center text-xs text-zinc-400">
+              {item.sub}
+            </span>
           </a>
         ))}
       </div>
     </div>
-  );
+  )
 }
