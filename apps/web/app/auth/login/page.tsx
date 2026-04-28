@@ -2,15 +2,18 @@
 
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { REFRESH_TOKEN_COOKIE, TOKEN_COOKIE } from "@/lib/auth";
+import { apiClient } from "@/lib/apiClient";
 
 type FieldError = { email?: string; password?: string; api?: string };
+type ApiError = { status?: number; message?: string; data?: unknown };
 
 function validateEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
 export default function LoginPage() {
-  const { saveTokenAndRedirect } = useAuth();
+  const { saveAuthAndRedirect } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPwd, setShowPwd] = useState(false);
@@ -19,7 +22,7 @@ export default function LoginPage() {
 
   function validate(): boolean {
     const errs: FieldError = {};
-    if (!validateEmail(email)) errs.email = "Informe um e-mail válido.";
+    if (!validateEmail(email)) errs.email = "Informe um e-mail vÃ¡lido.";
     if (password.length < 6) errs.password = "Senha muito curta.";
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -31,30 +34,30 @@ export default function LoginPage() {
     setErrors({});
 
     try {
-      const response = await fetch(
-        `http://localhost:3000/auth/login`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }),
-        }
-      );
+      const data = await apiClient(`/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
 
-      const data = await response.json();
+      saveAuthAndRedirect({
+        [TOKEN_COOKIE]: data.accessToken,
+        [REFRESH_TOKEN_COOKIE]: data.refreshToken,
+      });
+    } catch (error) {
+      const apiError = error as ApiError;
 
-      if (!response.ok) {
-        if (response.status === 401) {
-          setErrors({ api: "E-mail ou senha incorretos." });
-        } else {
-          setErrors({ api: "Erro ao conectar. Tente novamente." });
-        }
+      if (apiError.status === 401) {
+        setErrors({ api: "E-mail ou senha incorretos." });
         return;
       }
-      debugger
-      saveTokenAndRedirect("@barber:token", data.accessToken);
-      saveTokenAndRedirect("@barber:refreshToken", data.refreshToken);
-    } catch {
-      setErrors({ api: "Erro de conexão. Verifique sua internet." });
+
+      if (apiError.status) {
+        setErrors({ api: "Erro ao conectar. Tente novamente." });
+        return;
+      }
+
+      setErrors({ api: "Erro de conexÃ£o. Verifique sua internet." });
     } finally {
       setLoading(false);
     }
@@ -78,7 +81,7 @@ export default function LoginPage() {
           <p className="page-sub">Acesse o painel da sua barbearia</p>
         </div>
 
-        {/* Seção — Acesso */}
+        {/* SeÃ§Ã£o â€” Acesso */}
         <div className="section">
           <p className="section-label">Acesso</p>
 
@@ -139,7 +142,7 @@ export default function LoginPage() {
           </div>
         )}
 
-        {/* Botão */}
+        {/* BotÃ£o */}
         <button
           className="btn-primary"
           onClick={handleSubmit}
@@ -358,7 +361,7 @@ export default function LoginPage() {
   );
 }
 
-// ─── Icons ─────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Icons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function ScissorIcon() {
   return (

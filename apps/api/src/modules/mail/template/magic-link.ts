@@ -10,7 +10,7 @@ export function magicLinkTemplate({ name, link }: Params): string {
       <h2>Welcome, ${name}!</h2>
       <p>Click the button below to access the system.</p>
       <p>This link expires in <strong>15 minutes</strong> and can only be used once.</p>
-      
+      <a
         href="${link}"
         style="
           display: inline-block;

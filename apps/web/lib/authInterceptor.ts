@@ -1,20 +1,31 @@
-// lib/http/authInterceptor.ts
+import {
+  BARBERSHOP_HEADER,
+  getBarbershopIdFromToken,
+  getBrowserAuthToken,
+} from "./auth";
 
 export async function authInterceptor(
   config: RequestInit,
-  options?: { skipAuth?: boolean }
+  options?: { skipAuth?: boolean; token?: string },
 ) {
   if (options?.skipAuth) return config;
 
-  // ⚠️ depende de onde você salva o token
-  const token = localStorage.getItem("token");
+  const token = options?.token ?? getBrowserAuthToken();
 
-  if (token) {
-    config.headers = {
-      ...config.headers,
-      Authorization: `Bearer ${token}`,
-    };
+  if (!token) {
+    return config;
   }
+
+  const headers = new Headers(config.headers ?? {});
+  const barbershopId = getBarbershopIdFromToken(token);
+
+  headers.set("Authorization", `Bearer ${token}`);
+
+  if (barbershopId) {
+    headers.set(BARBERSHOP_HEADER, barbershopId);
+  }
+
+  config.headers = headers;
 
   return config;
 }

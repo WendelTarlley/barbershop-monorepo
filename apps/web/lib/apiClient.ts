@@ -1,34 +1,38 @@
-// lib/http/apiClient.ts
-
 import { authInterceptor } from "./authInterceptor";
 import { errorInterceptor } from "./errorInterceptor";
 
 type FetchOptions = RequestInit & {
   skipAuth?: boolean;
+  token?: string;
 };
 
-export async function apiClient(
-  path: string,
-  options: FetchOptions = {}
-) {
-  const baseUrl = process.env.API_URL;
+export async function apiClient(path: string, options: FetchOptions = {}) {
+  const baseUrl =
+    process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000/api";
 
   if (!baseUrl) {
-    throw new Error("API URL não definida");
+    throw new Error("API URL nao definida");
+  }
+
+  const requestUrl =
+    path.startsWith("http://") || path.startsWith("https://")
+      ? path
+      : `${baseUrl}${path}`;
+
+  const headers = new Headers(options.headers ?? {});
+
+  if (!headers.has("Content-Type") && !(options.body instanceof FormData)) {
+    headers.set("Content-Type", "application/json");
   }
 
   let config: RequestInit = {
     ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
+    headers,
   };
 
-  // 👉 interceptors
   config = await authInterceptor(config, options);
-  
-  const response = await fetch(`${baseUrl}${path}`, config);
+
+  const response = await fetch(requestUrl, config);
 
   return errorInterceptor(response);
 }

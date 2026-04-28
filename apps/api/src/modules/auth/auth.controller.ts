@@ -1,9 +1,16 @@
 // auth/auth.controller.ts
 import { Body, Controller, Get, Post, Query, UseGuards, Request } from "@nestjs/common"
+import { ThrottlerGuard, Throttle } from "@nestjs/throttler"
 import { AuthService } from "./auth.service"
 
 import { RefreshGuard } from "./guards/refresh.guard"
-import { CheckEmailDto, DefinePasswordDto, LoginDto } from "@barbershop/shared"
+import {
+  CheckEmailDto,
+  DefinePasswordDto,
+  ForgotPasswordDto,
+  LoginDto,
+  ResetPasswordDto,
+} from "@barbershop/shared"
 
 @Controller("auth")
 export class AuthController {
@@ -24,6 +31,22 @@ export class AuthController {
     return this.authService.definePassword(dto)
   }
 
+  @Post("forgot-password")
+  forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(dto)
+  }
+
+  @Get("verify-reset-password")
+  verifyResetPassword(@Query("token") token: string) {
+    return this.authService.verifyResetPassword(token)
+  }
+
+  @Post("reset-password")
+  resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto)
+  }
+
+@UseGuards(ThrottlerGuard)
   @Post("login")
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto)
