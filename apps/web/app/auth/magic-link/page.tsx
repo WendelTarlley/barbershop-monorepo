@@ -29,22 +29,18 @@ function mapLinkError(data: unknown): Exclude<Status, "loading"> {
 export default function MagicLinkPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [status, setStatus] = useState<Status>("loading");
+  const token = searchParams.get("token");
+  const [status, setStatus] = useState<Status>(token ? "loading" : "error_generic");
 
   useEffect(() => {
-    const token = searchParams.get("token");
-
     if (!token) {
-      setStatus("error_generic");
       return;
     }
-
-    const magicToken = token;
 
     async function validateMagicLink() {
       try {
         const data = await apiClient(
-          `/auth/verify-magic-link?token=${encodeURIComponent(magicToken)}`,
+          `/auth/verify-magic-link?token=${encodeURIComponent(token)}`,
         );
 
         sessionStorage.setItem("@barber:temp_token", data.tempToken);
@@ -61,28 +57,27 @@ export default function MagicLinkPage() {
       }
     }
 
-    validateMagicLink();
-  }, [searchParams, router]);
+    void validateMagicLink();
+  }, [router, token]);
 
   const errors: Record<Exclude<Status, "loading">, { title: string; description: string }> = {
     error_expired: {
       title: "Link expirado",
-      description: "Este link de acesso nÃ£o Ã© mais vÃ¡lido. Solicite um novo pelo suporte.",
+      description: "Este link de acesso nao e mais valido. Solicite um novo pelo suporte.",
     },
     error_used: {
-      title: "Link jÃ¡ utilizado",
-      description: "Este link jÃ¡ foi usado anteriormente. FaÃ§a login com sua senha.",
+      title: "Link ja utilizado",
+      description: "Este link ja foi usado anteriormente. Faca login com sua senha.",
     },
     error_generic: {
       title: "Algo deu errado",
-      description: "NÃ£o foi possÃ­vel validar seu acesso. Tente novamente ou contate o suporte.",
+      description: "Nao foi possivel validar seu acesso. Tente novamente ou contate o suporte.",
     },
   };
 
   return (
     <main className="screen">
       <div className="card">
-        {/* Logo / Ãcone */}
         <div className="logo-wrap">
           <ScissorIcon />
         </div>
@@ -137,7 +132,7 @@ export default function MagicLinkPage() {
           width: 72px;
           height: 72px;
           background: #1e1e1e;
-          border: 1px solid #F5A623;
+          border: 1px solid #f5a623;
           border-radius: 50%;
           display: flex;
           align-items: center;
@@ -156,14 +151,16 @@ export default function MagicLinkPage() {
           width: 36px;
           height: 36px;
           border: 3px solid #2a2a2a;
-          border-top-color: #F5A623;
+          border-top-color: #f5a623;
           border-radius: 50%;
           animation: spin 0.8s linear infinite;
           margin-bottom: 0.5rem;
         }
 
         @keyframes spin {
-          to { transform: rotate(360deg); }
+          to {
+            transform: rotate(360deg);
+          }
         }
 
         .error-icon {
@@ -199,7 +196,7 @@ export default function MagicLinkPage() {
         .btn-link {
           margin-top: 0.5rem;
           padding: 0.65rem 1.5rem;
-          background: #F5A623;
+          background: #f5a623;
           color: #0e0e0e;
           border-radius: 10px;
           font-size: 0.875rem;
@@ -218,7 +215,16 @@ export default function MagicLinkPage() {
 
 function ScissorIcon() {
   return (
-    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#F5A623" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="32"
+      height="32"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="#F5A623"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <circle cx="6" cy="6" r="3" />
       <circle cx="6" cy="18" r="3" />
       <line x1="20" y1="4" x2="8.12" y2="15.88" />

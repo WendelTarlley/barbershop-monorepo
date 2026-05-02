@@ -1,28 +1,35 @@
 "use client";
+
 import BarberCard from "@/components/barbers/BarberCard";
 import GenericList from "@/components/GenericList";
 import { apiClient } from "@/lib/apiClient";
 import { useRouter } from "next/navigation";
 import React, { useEffect } from "react";
 
-
+type Barber = {
+  id: string;
+  name: string;
+  specialty?: string;
+  icone?: string;
+};
 
 export default function Barber() {
-    const [search, setSearch] = React.useState("");
-    const router = useRouter()
+  const [search, setSearch] = React.useState("");
+  const [barbers, setBarbers] = React.useState<Barber[]>([]);
+  const router = useRouter();
 
-    useEffect(() => {
-        apiClient("/user/barbers")
-            .then((data) => setBarbers(data));
-    }, []);
+  useEffect(() => {
+    apiClient("/user/barbers").then((data) => setBarbers(data as Barber[]));
+  }, []);
 
-    const [barbers, setBarbers] = React.useState<any[]>([]);
+  function handleNovo() {
+    router.push("/barbers/register");
+  }
 
-    function handleNovo() {
-        router.push("/barbers/register");
-    }       
-    const filtered = barbers.filter(b => b.name.toLowerCase().includes(search.toLowerCase()));
-        
+  const filtered = barbers.filter((barber) =>
+    barber.name.toLowerCase().includes(search.toLowerCase()),
+  );
+
   return (
     <GenericList
       title="Barbeiros"
@@ -31,10 +38,9 @@ export default function Barber() {
       onClick={handleNovo}
       onSearch={setSearch}
     >
-      {filtered.map((barbeiro) => (
-        <BarberCard key={barbeiro.id} barbeiro={barbeiro} />
+      {filtered.map((barber) => (
+        <BarberCard key={barber.id} barber={barber} />
       ))}
     </GenericList>
-
   );
 }

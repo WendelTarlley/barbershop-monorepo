@@ -6,8 +6,8 @@
     "dev": "next dev --port 3001",
     "debug": "set NODE_OPTIONS=--inspect=9230 && next dev --port 3001",
     "build": "next build",
-    "lint": "eslint",
-    "test": "jest --config jest.config.js"
+    "lint": "eslint .",
+    "test": "jest --config jest.config.js --runInBand"
   },
   "dependencies": {
     "next": "16.2.3",
@@ -19,9 +19,11 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "jest": "^30.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.2.3",
     "tailwindcss": "^4",
+    "ts-jest": "^29.4.5",
     "typescript": "^5",
     "@barbershop/database": "*"
   }
