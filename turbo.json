@@ -15,6 +15,7 @@
       "outputs": [
         "dist/**",
         ".next/**",
+        ".next-build/**",
         "!.next/cache/**"
       ]
     },
@@ -33,9 +34,6 @@
     "test": {
       "dependsOn": [
         "^build"
-      ],
-      "outputs": [
-        "coverage/**"
       ]
     },
     "db:migrate": {
