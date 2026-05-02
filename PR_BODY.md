@@ -1,91 +1,102 @@
-## Summary
-Implementação de funcionalidades de segurança, gestão de barbeiros e serviços com autenticação robusta.
+## why
 
-## What
-Adição de 4 features principais:
+Este PR implementa o MVP da agenda de agendamentos no painel interno da barbearia (`apps/web`), com suporte backend em `apps/api` para leitura da agenda, consulta de disponibilidade e criação de agendamentos.
 
-**1. Rate Limiting no Login**
-- Configuração do @nestjs/throttler no AppModule
-- Aplicação de ThrottlerGuard no endpoint POST /auth/login
-- Proteção contra ataques de força bruta
+O objetivo foi colocar a agenda em funcionamento no fluxo de gestão interna, sem depender do `customer-web`, permitindo validar a experiência principal de:
+- visualizar agendamentos por barbeiro
+- alternar entre dia, semana e mês
+- respeitar buffer entre atendimentos
+- criar agendamentos a partir de um fluxo guiado
 
-**2. Reset de Senha**
-- PáginaForgotPasswordPage para solicitação de reset
-- Página ResetPasswordPage com token para nova senha
-- Template de email para reset de senha
-- Novos DTOs: forgot-password.dto.ts, reset-password.dto.ts
-- Melhor tratamento de erros no login e verificação de magic link
+Também houve um ajuste de direção de UX durante a implementação para manter a tela aderente ao padrão do projeto, priorizando mobile first.
 
-**3. Gestão de Serviços**
-- CreateBarbershopServiceDto e UpdateBarbershopServiceDto
-- CRUD completo no BarbershopServiceController
-- Componentes ServiceCard e ServiceForm
-- Páginas de listagem e edição de serviços
-- Utilitários de validação e Jest configurado
+## how and what
 
-**4. Registo e Permissões de Barbeiros**
-- FormRegisterBarber melhorado com seleção de funções
-- BarberCard para exibição de informações
-- PermissionsPanel para gestão de permissões
-- useAuth hook refatorado
-- serverAuth para autenticação server-side
-- Proxy middleware para auth e authZ
-- API client com URLs dinâmicas
+### API
 
-**Estatísticas:**
-- 74 arquivos alterados
-- 3941 inserções
-- 586 remoções
+Foi criado um novo módulo `schedule` e ele foi registrado no `AppModule`.
 
-## Why
-**Segurança:** Proteger o sistema contra ataques de força bruta com rate limiting.
+Esse módulo passou a expor:
+- `GET /schedule`
+  - retorna a agenda da barbearia logada
+  - organiza os dados por barbeiro
+  - entrega visualizações compatíveis com `day`, `week` e `month`
+  - inclui cliente, serviços, barbeiro e metadados de buffer
+- `GET /schedule/booking-options`
+  - retorna datas e horários disponíveis para um serviço
+  - considera duração do serviço, buffer, bloqueios e agenda existente
+- `GET /schedule/availability`
+  - retorna os barbeiros disponíveis para um serviço em um horário específico
+- `POST /schedule/appointments`
+  - cria o agendamento
+  - aceita nome e telefone do cliente diretamente no fluxo, criando o cliente inline quando necessário
 
-**Recuperação de conta:** Usuários precisam de mecanismo para recuperar acesso quando esquecerem a senha.
+A lógica de disponibilidade considera:
+- duração do serviço
+- buffer entre atendimentos
+- bloqueios do barbeiro
+- agendamentos já existentes
+- vínculo `barbeiro x serviço` quando houver registro em `barber_service`
 
-**Gestão de serviços:** Barbearias precisam gerenciar seus serviços (cortes, barba, etc.) com CRUD completo.
+Para o MVP, foi mantido um fallback operacional:
+- se não houver `WorkingDay`, assume `09:00` às `18:00`
+- a janela de datas disponíveis cobre os próximos 14 dias
+- os horários são gerados em intervalos de 30 minutos
 
-**Gestão de equipa:** Barbeiros precisam de registo com funções/papéis definidos e permissões adequadas.
+### Web
 
-## How
-**Backend (NestJS):**
-- ThrottlerModule configurado com 3 tiers (short/medium/long)
-- Guards aplicados diretamente nos endpoints sensíveis
-- Serviço de email integrado para envio de reset
-- Validação de DTOs com class-validator
+Foi criada a rota autenticada `/schedule` no painel interno.
 
-**Frontend (Next.js):**
-- Páginas de autenticação em /app/auth/
-- Server components para SEO
-- Client components para interatividade
-- Hook useAuth centralizado
-- Proxy middleware para Requests com auth token
+A tela passou a incluir:
+- visualização inicial em `Dia`
+- alternância entre `Dia`, `Semana` e `Mes`
+- layout por barbeiro
+- cards com cliente, serviço e barbeiro
+- foto pequena do barbeiro no card
+- buffer visual discreto
+- exibição apenas de barbeiros com agendamento no período visível
 
-**Arquitetura:**
-- Monorepo com apps/api, apps/web, packages/shared
-- DTOs partilhados no packages/shared
-- Proxy pattern para API calls
-- Contexto BarbershopContext para isolamento de dados
+Também foi adicionado um atalho `Schedule` na home do painel para facilitar o acesso.
 
-## Type of Change
-- [ ] Bug fix
-- [x] New feature
-- [ ] Breaking change
-- [ ] Documentation update
-- [ ] Refactoring
-- [ ] Performance improvement
-- [ ] Test addition/fix
+### Fluxo de novo agendamento
 
-## Related Issues
-<!-- Adicionar referências aos issues -->
+O fluxo foi ajustado para seguir a ordem definida pelo produto:
+1. escolher o serviço
+2. escolher uma data disponível
+3. escolher um horário disponível
+4. visualizar os barbeiros disponíveis para aquele recorte
+5. informar nome e telefone do cliente
+6. confirmar o agendamento
 
-## Testing
-```bash
-npm run test
-npm run test:e2e
-```
+Durante os ajustes, foram removidos comportamentos que fugiam da proposta inicial:
+- não há mais carga inicial de clientes
+- data e horário deixaram de ser inputs livres
+- cliente é informado diretamente no final do fluxo
 
-## Screenshots/Videos
-<!-- Adicionar screenshots se necessário -->
+### Mobile first
 
-## Additional Notes
-Branch comparada com origin/master. Requer review cuidadosa pelo volume de alterações.
+A tela da agenda foi reestruturada para seguir melhor o padrão mobile first do projeto:
+- header mais compacto
+- CTA principal mais evidente
+- controles reorganizados para telas pequenas
+- modal de agendamento com comportamento próximo de bottom sheet
+- ajustes para a área útil da tela ocupar corretamente o container vertical
+
+### Ajustes complementares
+
+Também foram feitos alguns acertos de comportamento:
+- semana e mês passaram a iniciar a partir da data selecionada, em vez de voltar automaticamente para o início da semana ou para o grid completo do mês
+- a exibição de horários foi corrigida para não deslocar horários selecionados como `09:00` para `06:00`, alinhando a renderização com o referencial UTC usado no fluxo atual
+- foram adicionados `AGENTS.md` em camadas para consolidar padrões do monorepo, da API, do `web` e do `customer-web`
+
+## comments
+
+Validação executada:
+- `apps/api`: `npx tsc --noEmit`
+- `apps/api`: `npx eslint` nos arquivos do módulo `schedule`
+- `apps/web`: `npx eslint app/schedule/page.tsx`
+
+Observações:
+- permanece apenas o warning conhecido do uso de `<img>` no avatar da agenda
+- ainda não existe uma gestão visual completa de `WorkingDay`, `Availability` e vínculo `barbeiro x serviço`; o backend já respeita esses dados quando existirem, com fallback para o MVP quando não existirem
+- o tratamento de timezone foi estabilizado para o fluxo atual, mas ainda vale uma revisão futura para modelar explicitamente o fuso da barbearia de ponta a ponta
