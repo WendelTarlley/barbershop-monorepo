@@ -15,6 +15,7 @@ import { BarbershopModule } from './modules/barbershop/barbershop.module';
 import { BarbershopServiceModule } from './modules/barbershop-service/barbershop-service.module';
 import { MailModule } from './modules/mail/mail.module';
 import { RolesModule } from './modules/roles/roles.module';
+import { ScheduleModule } from './modules/schedule/schedule.module';
 import { CustomerModule } from './modules/customer/customer.module';
 import { CustomerAuthModule } from './modules/customer-auth/customer-auth.module';
 import { UserModule } from './modules/user/user.module';
@@ -48,6 +49,7 @@ import { PrismaModule } from './prisma/prisma.module';
     CustomerAuthModule,
     MailModule,
     RolesModule,
+    ScheduleModule,
     BarbershopContextModule,
     ClsModule.forRoot({
       global: true,
