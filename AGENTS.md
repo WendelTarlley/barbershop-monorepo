@@ -18,6 +18,7 @@
 - Preserve worktree changes that are unrelated to the current task.
 - Validate only the scope you changed whenever the repo has known unrelated failures.
 - When starting a new session or switching to a new task context, create a dedicated git worktree before editing so unrelated changes do not mix in the same workspace.
+- After pushing a PR from a dedicated worktree, always ask whether the worktree can or should be deleted.
 - When a rule is app-specific, define it in the nearest `AGENTS.md` inside that app.
 
 ## Cross-App Boundaries
