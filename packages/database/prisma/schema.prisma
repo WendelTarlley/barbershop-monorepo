@@ -225,16 +225,20 @@ model Block {
 
 // ─── Clientes ─────────────────────────────────────────
 
-model Client {
-  id        String   @id @default(uuid())
-  name      String
-  phone     String
-  email     String?
-  createdAt DateTime @default(now()) @map("created_at")
+model Customer {
+  id           String   @id @default(uuid())
+  name         String
+  phone        String
+  email        String?  @unique
+  passwordHash String?  @map("password_hash")
+  firstAccess  Boolean  @default(true) @map("first_access")
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
   appointments Appointment[]
 
-  @@map("client")
+  @@map("customer")
 }
 
 // ─── Agendamentos ─────────────────────────────────────
@@ -252,8 +256,8 @@ model Appointment {
   userId   String @map("user_id") // barbeiro
   user     User   @relation(fields: [userId], references: [id])
 
-  clientId String @map("client_id")
-  client   Client @relation(fields: [clientId], references: [id])
+  customerId String   @map("customer_id")
+  customer   Customer @relation(fields: [customerId], references: [id])
 
   services AppointmentService[]
 
@@ -300,4 +304,3 @@ model MagicLink {
 
   @@map("magic_link")
 }
-
