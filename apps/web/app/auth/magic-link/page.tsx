@@ -37,10 +37,12 @@ export default function MagicLinkPage() {
       return;
     }
 
+    const magicToken = token;
+
     async function validateMagicLink() {
       try {
         const data = await apiClient(
-          `/auth/verify-magic-link?token=${encodeURIComponent(token)}`,
+          `/auth/verify-magic-link?token=${encodeURIComponent(magicToken)}`,
         );
 
         sessionStorage.setItem("@barber:temp_token", data.tempToken);

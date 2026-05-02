@@ -33,7 +33,8 @@
     },
     "test": {
       "dependsOn": [
-        "^build"
+        "^build",
+        "^db:generate"
       ]
     },
     "db:migrate": {
