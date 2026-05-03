@@ -52,7 +52,6 @@ function nextState(
   overrides: Record<string, boolean>
 ): Record<string, boolean> {
   const current  = getState(permId, rolePermIds, overrides)
-  const fromRole = rolePermIds.has(permId)
   const next     = { ...overrides }
 
   if (current === "on-role")    next[permId] = false        // revoga
