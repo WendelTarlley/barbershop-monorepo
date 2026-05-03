@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { getInitials } from "./schedule-utils";
 
 export function Avatar({
@@ -13,7 +14,7 @@ export function Avatar({
 
   if (photoUrl) {
     return (
-      <img
+      <Image
         src={photoUrl}
         alt={name}
         title={name}

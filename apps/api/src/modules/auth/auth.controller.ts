@@ -1,6 +1,7 @@
 // auth/auth.controller.ts
 import { Body, Controller, Get, Post, Query, UseGuards, Request } from "@nestjs/common"
-import { ThrottlerGuard, Throttle } from "@nestjs/throttler"
+import type { Request as ExpressRequest } from "express"
+import { ThrottlerGuard } from "@nestjs/throttler"
 import { AuthService } from "./auth.service"
 
 import { RefreshGuard } from "./guards/refresh.guard"
@@ -46,7 +47,7 @@ export class AuthController {
     return this.authService.resetPassword(dto)
   }
 
-@UseGuards(ThrottlerGuard)
+  @UseGuards(ThrottlerGuard)
   @Post("login")
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto)
@@ -54,7 +55,7 @@ export class AuthController {
 
   @UseGuards(RefreshGuard)
   @Post("refresh")
-  refresh(@Request() req) {
+  refresh(@Request() req: ExpressRequest & { user: { id: string } }) {
     return this.authService.refresh(req.user.id)
   }
 }
