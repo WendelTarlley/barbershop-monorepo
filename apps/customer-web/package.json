@@ -6,6 +6,7 @@
     "dev": "next dev --port 3002",
     "build": "next build",
     "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "test": "node -e \"console.log('No automated tests configured for @barbershop/customer-web yet.')\""
   },
   "dependencies": {
@@ -14,11 +15,17 @@
     "react-dom": "19.2.4"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.3",
-    "typescript": "^5"
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.5",
+    "globals": "^17.6.0",
+    "prettier": "^3.8.3",
+    "typescript": "^5",
+    "typescript-eslint": "^8.59.1"
   }
 }
