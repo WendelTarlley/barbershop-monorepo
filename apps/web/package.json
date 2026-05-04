@@ -7,6 +7,7 @@
     "debug": "set NODE_OPTIONS=--inspect=9230 && next dev --port 3001",
     "build": "next build",
     "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "test": "jest --config jest.config.js --runInBand"
   },
   "dependencies": {
@@ -15,16 +16,22 @@
     "react-dom": "19.2.4"
   },
   "devDependencies": {
+    "@barbershop/database": "*",
+    "@eslint/js": "^9.39.4",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "jest": "^30.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.2.3",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.5",
+    "globals": "^17.6.0",
+    "jest": "^30.0.0",
+    "prettier": "^3.8.3",
     "tailwindcss": "^4",
     "ts-jest": "^29.4.5",
     "typescript": "^5",
-    "@barbershop/database": "*"
+    "typescript-eslint": "^8.59.1"
   }
 }
