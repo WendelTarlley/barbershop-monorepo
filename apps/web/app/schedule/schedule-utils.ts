@@ -49,6 +49,25 @@ export function formatRangeLabel(data: ScheduleResponse) {
   }).format(new Date(end.getTime() - 1))}`;
 }
 
+export function formatSelectedPeriod(data: ScheduleResponse) {
+  if (data.view === 'day') {
+    const selectedDay = data.days.find((day) => day.date === data.selectedDate);
+    return selectedDay?.isToday ? 'Foco em hoje' : selectedDay?.label ?? data.selectedDate;
+  }
+
+  if (data.view === 'week') {
+    return `Semana de ${formatRangeLabel(data)}`;
+  }
+
+  const baseDate = new Date(`${data.selectedDate}T00:00:00.000Z`);
+
+  return new Intl.DateTimeFormat('pt-BR', {
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(baseDate);
+}
+
 export function getStatusLabel(status: string) {
   if (status === 'CONFIRMED') return 'Confirmado';
   if (status === 'COMPLETED') return 'Concluido';
