@@ -39,6 +39,7 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+.worktrees/
 
 # Turbo
 .turbo/
