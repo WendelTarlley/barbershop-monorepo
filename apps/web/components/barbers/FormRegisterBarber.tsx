@@ -64,11 +64,11 @@ export default function FormRegisterBarber() {
   })
 
   useEffect(() => {
-    apiClient("/roles")
+    apiClient<Role[]>("/roles")
       .then((data) => {
         setRoles(data)
 
-        const defaultRole = data.find((role: Role) => role.name === "Barbeiro") ?? data[0]
+        const defaultRole = data.find((role) => role.name === "Barbeiro") ?? data[0]
 
         if (!defaultRole) {
           return
@@ -146,7 +146,7 @@ export default function FormRegisterBarber() {
     return Object.keys(nextErrors).length === 0
   }
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
     if (!validateForm()) {
@@ -158,7 +158,7 @@ export default function FormRegisterBarber() {
       photo: DEFAULT_AVATAR_SRC,
     })
 
-    apiClient("/user", {
+    void apiClient("/user", {
       method: "POST",
       body: JSON.stringify({...form}),
     })

@@ -25,11 +25,11 @@ export function useSchedule(
       setIsLoading(true);
 
       try {
-        const response = await apiClient(`/schedule?view=${view}&date=${selectedDate}`);
+        const response = await apiClient<ScheduleResponse>(`/schedule?view=${view}&date=${selectedDate}`);
 
         if (!isMounted) return;
 
-        setData(response as ScheduleResponse);
+        setData(response);
         setStatusMessage(null);
       } catch (error) {
         console.error(error);
@@ -42,7 +42,7 @@ export function useSchedule(
       }
     }
 
-    loadSchedule();
+    void loadSchedule();
 
     return () => {
       isMounted = false;
@@ -70,11 +70,11 @@ export function useBookingOptions(isBookingOpen: boolean) {
       setIsBookingLoading(true);
 
       try {
-        const servicesResponse = await apiClient('/barbershop-service');
+        const servicesResponse = await apiClient<ServiceOption[]>('/barbershop-service');
 
         if (!isMounted) return;
 
-        const nextServices = (servicesResponse as ServiceOption[]).filter(
+        const nextServices = servicesResponse.filter(
           (service) => service.active,
         );
 
@@ -91,7 +91,7 @@ export function useBookingOptions(isBookingOpen: boolean) {
       }
     }
 
-    loadBookingOptions();
+    void loadBookingOptions();
 
     return () => {
       isMounted = false;
@@ -127,15 +127,15 @@ export function useDateTimeOptions(
       setIsDateOptionsLoading(true);
 
       try {
-        const response = (await apiClient(
-          `/schedule/booking-options?serviceId=${serviceId}${
-            date ? `&date=${date}` : ''
-          }`,
-        )) as {
+        const response = await apiClient<{
           selectedDate: string;
           dates: AvailableDateOption[];
           times: AvailableTimeOption[];
-        };
+        }>(
+          `/schedule/booking-options?serviceId=${serviceId}${
+            date ? `&date=${date}` : ''
+          }`,
+        );
 
         if (!isMounted) return;
 
@@ -151,7 +151,7 @@ export function useDateTimeOptions(
       }
     }
 
-    loadDateTimeOptions();
+    void loadDateTimeOptions();
 
     return () => {
       isMounted = false;
@@ -185,11 +185,11 @@ export function useAvailability(
       setIsAvailabilityLoading(true);
 
       try {
-        const response = (await apiClient(
+        const response = await apiClient<{ barbers: AvailableBarberOption[] }>(
           `/schedule/availability?serviceId=${serviceId}&startDatetime=${encodeURIComponent(
             `${date}T${time}:00.000Z`,
           )}`,
-        )) as { barbers: AvailableBarberOption[] };
+        );
 
         if (!isMounted) return;
 
@@ -209,7 +209,7 @@ export function useAvailability(
       }
     }
 
-    loadAvailability();
+    void loadAvailability();
 
     return () => {
       isMounted = false;

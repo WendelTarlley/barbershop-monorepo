@@ -1,5 +1,7 @@
 {
   "compilerOptions": {
+    "ignoreDeprecations": "5.0",
+    "baseUrl": ".",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -10,5 +12,12 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true
+  },
+  "paths": {
+    "@web/*": ["./apps/web/*"],
+    "@customer_web/*": ["./apps/customer_web/*"],
+    "@actions/*": ["./packages/actions/*"],
+    "@lib/*": ["./packages/lib/*"],
+    "@components/*": ["./packages/components/*"]
   }
 }

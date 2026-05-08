@@ -2,9 +2,9 @@ import {
   BARBERSHOP_HEADER,
   getBarbershopIdFromToken,
   getBrowserAuthToken,
-} from "./auth";
+} from './auth';
 
-export async function authInterceptor(
+export function authInterceptor(
   config: RequestInit,
   options?: { skipAuth?: boolean; token?: string },
 ) {
@@ -19,7 +19,7 @@ export async function authInterceptor(
   const headers = new Headers(config.headers ?? {});
   const barbershopId = getBarbershopIdFromToken(token);
 
-  headers.set("Authorization", `Bearer ${token}`);
+  headers.set('Authorization', `Bearer ${token}`);
 
   if (barbershopId) {
     headers.set(BARBERSHOP_HEADER, barbershopId);

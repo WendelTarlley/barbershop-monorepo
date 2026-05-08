@@ -139,19 +139,17 @@ export default function PermissionsPanel({ roleId, overrides, onChange }: Props)
   useEffect(() => {
     if (!roleId) return
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true)
     setError(null)
 
-    apiClient(`/roles/${roleId}/permissions`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Erro ao buscar permissões")
-        return res.json()
-      })
-      .then((data: { allPermissions: Permission[]; rolePermissionIds: string[] }) => {
+    apiClient<{ ok?: boolean; allPermissions: Permission[]; rolePermissionIds: string[] }>(`/roles/${roleId}/permissions`)
+      .then((data) => {
+        if (data.ok === false) throw new Error("Erro ao buscar permissões")
         setAllPermissions(data.allPermissions)
         setRolePermIds(new Set(data.rolePermissionIds))
       })
-      .catch((err) => setError(err.message))
+      .catch((err: Error) => setError(err.message))
       .finally(() => setLoading(false))
   }, [roleId])
 

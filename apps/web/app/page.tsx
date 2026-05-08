@@ -1,6 +1,7 @@
 import GestaoCard from "@/components/GestãoCard"
 import { BARBERSHOP_HEADER } from "@/lib/auth"
 import { requireAuth } from "@/lib/serverAuth"
+import { getBarbers } from "@actions/barbers"
 
 type HomeStats = {
   barbers: number
@@ -39,6 +40,7 @@ async function getHomeStats(token: string): Promise<HomeStats> {
   }
 
   try {
+    const { totalBarbers } = await getBarbers()
     const [barbersResponse, servicesResponse] = await Promise.all([
       fetch(`${apiBaseUrl}/user/barbers`, {
         headers,
@@ -50,14 +52,16 @@ async function getHomeStats(token: string): Promise<HomeStats> {
       }),
     ])
 
-    const [barbers, services] = await Promise.all([
-      barbersResponse.ok ? ((await barbersResponse.json()) as unknown[]) : [],
-      servicesResponse.ok ? ((await servicesResponse.json()) as unknown[]) : [],
-    ])
+    const barbersJson = barbersResponse.ok
+      ? ((await barbersResponse.json()) as unknown[])
+      : [];
+    const servicesJson = servicesResponse.ok
+      ? ((await servicesResponse.json()) as unknown[])
+      : [];
 
     return {
-      barbers: barbers.length,
-      services: services.length,
+      barbers: totalBarbers,
+      services: servicesJson.length,
     }
   } catch {
     return {

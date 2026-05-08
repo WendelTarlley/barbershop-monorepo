@@ -34,7 +34,7 @@ export default function LoginPage() {
     setErrors({});
 
     try {
-      const data = await apiClient(`/auth/login`, {
+      const data = await apiClient<{ accessToken: string; refreshToken: string }>(`/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -64,7 +64,7 @@ export default function LoginPage() {
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
-    if (e.key === "Enter") handleSubmit();
+    if (e.key === 'Enter') void handleSubmit();
   }
 
   return (
@@ -145,7 +145,7 @@ export default function LoginPage() {
         {/* BotÃ£o */}
         <button
           className="btn-primary"
-          onClick={handleSubmit}
+          onClick={() => void handleSubmit()}
           disabled={loading}
           aria-busy={loading}
         >

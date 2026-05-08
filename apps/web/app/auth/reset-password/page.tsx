@@ -75,7 +75,7 @@ export default function ResetPasswordPage() {
 
     async function validateLink() {
       try {
-        const data = await apiClient(
+        const data = await apiClient<{ tempToken: string }>(
           `/auth/verify-reset-password?token=${encodeURIComponent(resetToken)}`,
         );
 
@@ -93,7 +93,7 @@ export default function ResetPasswordPage() {
       }
     }
 
-    validateLink();
+    void validateLink();
   }, [searchParams]);
 
   function validate(): boolean {
@@ -120,7 +120,7 @@ export default function ResetPasswordPage() {
     setErrors({});
 
     try {
-      const data = await apiClient("/auth/reset-password", {
+      const data = await apiClient<{ accessToken: string; refreshToken: string }>("/auth/reset-password", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -307,7 +307,7 @@ export default function ResetPasswordPage() {
 
         <button
           className="btn-primary"
-          onClick={handleSubmit}
+          onClick={() => void handleSubmit()}
           disabled={saving}
           aria-busy={saving}
         >
