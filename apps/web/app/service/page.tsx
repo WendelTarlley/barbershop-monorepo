@@ -19,7 +19,7 @@ export default function ServicePage() {
     setIsLoading(true);
 
     try {
-      const response = await apiClient('/barbershop-service');
+      const response = await apiClient<ServiceRecord[]>('/barbershop-service');
       setServices(response);
       setStatusMessage(null);
     } catch (error) {
@@ -31,7 +31,7 @@ export default function ServicePage() {
   }
 
   useEffect(() => {
-    loadServices();
+    void loadServices();
   }, []);
 
   const filteredServices = useMemo(() => {
@@ -94,7 +94,7 @@ export default function ServicePage() {
               <ServiceCard
                 key={service.id}
                 service={service}
-                onDelete={handleDelete}
+                onDelete={() => void handleDelete(service.id)}
               />
             ))}
           </div>

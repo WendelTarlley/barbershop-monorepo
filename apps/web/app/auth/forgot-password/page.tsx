@@ -59,8 +59,8 @@ export default function ForgotPasswordPage() {
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
-    if (e.key === "Enter") {
-      handleSubmit();
+    if (e.key === 'Enter') {
+      void handleSubmit();
     }
   }
 
@@ -122,7 +122,7 @@ export default function ForgotPasswordPage() {
 
             <button
               className="btn-primary"
-              onClick={handleSubmit}
+              onClick={() => void handleSubmit()}
               disabled={loading}
               aria-busy={loading}
             >

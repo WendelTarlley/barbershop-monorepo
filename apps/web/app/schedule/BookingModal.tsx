@@ -242,7 +242,7 @@ export function BookingModal({
 
             <button
               type="button"
-              onClick={onSubmit}
+              onClick={() => void onSubmit()}
               disabled={isSubmitting || !canSubmit}
               className="mt-2 rounded-2xl bg-amber-400 px-4 py-3 text-sm font-semibold text-zinc-950 disabled:cursor-not-allowed disabled:opacity-60"
             >

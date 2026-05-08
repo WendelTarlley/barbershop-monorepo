@@ -35,7 +35,7 @@ export default function BookPage() {
   useEffect(() => {
     async function loadBarbershops() {
       try {
-        const data = await apiFetch("/barbershop")
+        const data = await apiFetch("/barbershops")
         setBarbershops(Array.isArray(data) ? data : [])
       } catch (loadError) {
         setError(
@@ -81,14 +81,10 @@ export default function BookPage() {
     const normalizedSearch = normalizeText(search.trim())
 
     if (!normalizedSearch) {
-      return barbershops.filter((barbershop) => barbershop.active)
+      return barbershops
     }
 
     return barbershops.filter((barbershop) => {
-      if (!barbershop.active) {
-        return false
-      }
-
       const haystack = normalizeText(
         `${barbershop.name} ${barbershop.address ?? ""} ${barbershop.phone ?? ""}`,
       )
@@ -209,18 +205,9 @@ export default function BookPage() {
       </section>
 
       <aside className="page-card stack-md">
-        <span className="eyebrow">Como funciona</span>
         <div className="info-box">
-          <strong>1. Explore sem login</strong>
-          <p>O cliente pode entrar como visitante e descobrir a unidade ideal primeiro.</p>
-        </div>
-        <div className="info-box">
-          <strong>2. Escolha a barbearia</strong>
-          <p>Endereco e contato ficam visiveis antes de qualquer criacao de conta.</p>
-        </div>
-        <div className="info-box">
-          <strong>3. Crie acesso so se quiser voltar depois</strong>
-          <p>O login passa a ser util para historico, perfil e proximos agendamentos.</p>
+          <strong>Acesso opcional</strong>
+          <p>Escolha a unidade primeiro. A conta pode ser criada depois.</p>
         </div>
         <div className="actions-row">
           <Link className="secondary-btn" href="/auth/login">

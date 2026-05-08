@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "baseUrl": ".",
     "target": "ES2017",
     "lib": [
       "dom",
@@ -29,6 +30,9 @@
     "paths": {
       "@/*": [
         "./*"
+      ],
+      "@actions/*": [
+        "../../packages/actions/*"
       ]
     }
   },
@@ -44,5 +48,6 @@
   ],
   "exclude": [
     "node_modules"
-  ]
+  ],
+  "extends": "../../tsconfig.base.json"
 }

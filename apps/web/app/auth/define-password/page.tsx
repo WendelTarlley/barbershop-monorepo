@@ -66,13 +66,16 @@ export default function SetPasswordPage() {
     }
 
     try {
-      const data = await apiClient(`/auth/define-password`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const data = await apiClient<{ accessToken: string; refreshToken: string }>(
+        `/auth/define-password`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ token: tempToken, password }),
         },
-        body: JSON.stringify({ token: tempToken, password }),
-      });
+      );
 
       sessionStorage.removeItem("@barber:temp_token");
       saveAuthAndRedirect({
@@ -206,7 +209,7 @@ export default function SetPasswordPage() {
 
         <button
           className="btn-primary"
-          onClick={handleSubmit}
+          onClick={() => void handleSubmit()}
           disabled={loading}
           aria-busy={loading}
         >

@@ -2,7 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestj
 import { BarbershopService } from './barbershop.service';
 import { CreateBarbershopDto } from '@barbershop/shared';
 
-@Controller('barbershop')
+@Controller('barbershops')
 export class BarbershopController {
       constructor(private readonly barbershopService: BarbershopService) {}
 

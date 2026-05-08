@@ -1,9 +1,19 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000"
+const RAW_API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000"
 const ACCESS_TOKEN_KEY = "@barbershop:customer-token"
 const REFRESH_TOKEN_KEY = "@barbershop:customer-refresh-token"
 
 type ApiOptions = RequestInit & {
   auth?: boolean
+}
+
+function getApiUrl() {
+  const normalizedApiUrl = RAW_API_URL.replace(/\/$/, "")
+
+  if (normalizedApiUrl.endsWith("/api")) {
+    return normalizedApiUrl
+  }
+
+  return `${normalizedApiUrl}/api`
 }
 
 export async function apiFetch(path: string, options: ApiOptions = {}) {
@@ -21,7 +31,7 @@ export async function apiFetch(path: string, options: ApiOptions = {}) {
     }
   }
 
-  const response = await fetch(`${API_URL}${path}`, {
+  const response = await fetch(`${getApiUrl()}${path}`, {
     ...options,
     headers,
   })

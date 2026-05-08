@@ -43,8 +43,8 @@ export default function ServiceForm({ mode, serviceId }: ServiceFormProps) {
 
     setIsLoading(true);
 
-    apiClient(`/barbershop-service/${serviceId}`)
-      .then((service: ServiceRecord) => {
+    apiClient<ServiceRecord>(`/barbershop-service/${serviceId}`)
+      .then((service) => {
         if (!isMounted) {
           return;
         }
@@ -108,7 +108,7 @@ export default function ServiceForm({ mode, serviceId }: ServiceFormProps) {
       const payload = buildServicePayload(values);
 
       if (mode === 'create') {
-        const createdService = await apiClient('/barbershop-service', {
+        const createdService = await apiClient<{ id: string }>('/barbershop-service', {
           method: 'POST',
           body: JSON.stringify(payload),
         });
@@ -148,7 +148,7 @@ export default function ServiceForm({ mode, serviceId }: ServiceFormProps) {
       statusMessage={statusMessage}
       onBack={() => router.back()}
       onChange={handleChange}
-      onSubmit={handleSubmit}
+      onSubmit={(e) => void handleSubmit(e)}
     />
   );
 }

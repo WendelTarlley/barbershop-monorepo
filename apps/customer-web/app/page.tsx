@@ -39,20 +39,9 @@ export default function HomePage() {
       </section>
 
       <aside className="page-card stack-md">
-        <span className="eyebrow">Fluxo</span>
-        <div className="meta-list">
-          <div className="meta-item">
-            <strong>1. Entrada rapida</strong>
-            Cliente pode explorar as unidades sem criar conta.
-          </div>
-          <div className="meta-item">
-            <strong>2. Ativacao opcional</strong>
-            O login pode ser criado durante ou depois do primeiro atendimento.
-          </div>
-          <div className="meta-item">
-            <strong>3. Retorno com autenticacao propria</strong>
-            As proximas consultas usam o fluxo `customer-auth`.
-          </div>
+        <div className="info-box">
+          <strong>Sem conta, sem bloqueio</strong>
+          <p>Veja a unidade cadastrada primeiro e crie acesso so quando fizer sentido.</p>
         </div>
       </aside>
     </main>

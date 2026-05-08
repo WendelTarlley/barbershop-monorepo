@@ -41,7 +41,7 @@ export default function MagicLinkPage() {
 
     async function validateMagicLink() {
       try {
-        const data = await apiClient(
+        const data = await apiClient<{ tempToken: string }>(
           `/auth/verify-magic-link?token=${encodeURIComponent(magicToken)}`,
         );
 

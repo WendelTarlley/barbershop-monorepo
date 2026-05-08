@@ -19,7 +19,7 @@ export default function Barber() {
   const router = useRouter();
 
   useEffect(() => {
-    apiClient("/user/barbers").then((data) => setBarbers(data as Barber[]));
+    void apiClient<Barber[]>("/user/barbers").then((data) => setBarbers(data));
   }, []);
 
   function handleNovo() {

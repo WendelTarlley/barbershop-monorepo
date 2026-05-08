@@ -20,6 +20,8 @@ export default [
       'build/**',
       'next-env.d.ts',
       'eslint.config.mjs',
+      'jest.config.js',
+      'postcss.config.mjs',
     ],
   },
   {
