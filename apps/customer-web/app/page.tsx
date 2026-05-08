@@ -30,7 +30,7 @@ export default function HomePage() {
 
         <div className="actions-row">
           <Link className="nav-link-primary" href="/book">
-            Iniciar agendamento
+            Ver barbearias proximas
           </Link>
           <Link className="nav-link" href="/auth/register">
             Criar conta
@@ -43,7 +43,7 @@ export default function HomePage() {
         <div className="meta-list">
           <div className="meta-item">
             <strong>1. Entrada rapida</strong>
-            Cliente informa dados minimos para nao perder conversao.
+            Cliente pode explorar as unidades sem criar conta.
           </div>
           <div className="meta-item">
             <strong>2. Ativacao opcional</strong>

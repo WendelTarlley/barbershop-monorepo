@@ -1,239 +1,233 @@
 "use client"
 
 import Link from "next/link"
-import { useState } from "react"
+import { useSearchParams } from "next/navigation"
+import { useEffect, useMemo, useState } from "react"
 
-import { apiFetch, saveCustomerTokens } from "@/lib/api"
+import { apiFetch } from "@/lib/api"
 
-type FieldErrors = {
-  name?: string
-  phone?: string
-  email?: string
-  password?: string
-  api?: string
+type Barbershop = {
+  id: string
+  name: string
+  slug: string
+  phone: string | null
+  address: string | null
+  active: boolean
 }
 
-function validateEmail(email: string) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+function normalizeText(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
 }
 
 export default function BookPage() {
-  const [name, setName] = useState("")
-  const [phone, setPhone] = useState("")
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [createAccount, setCreateAccount] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState<string | null>(null)
-  const [errors, setErrors] = useState<FieldErrors>({})
+  const searchParams = useSearchParams()
+  const [barbershops, setBarbershops] = useState<Barbershop[]>([])
+  const [search, setSearch] = useState("")
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [locationState, setLocationState] = useState<string>(
+    "Ative sua localizacao para ajudar a encontrar uma unidade mais conveniente.",
+  )
 
-  function validateForm() {
-    const nextErrors: FieldErrors = {}
-
-    if (!name.trim()) {
-      nextErrors.name = "Informe seu nome."
-    }
-
-    if (!phone.trim()) {
-      nextErrors.phone = "Informe seu telefone."
-    }
-
-    if (email && !validateEmail(email)) {
-      nextErrors.email = "Informe um e-mail valido."
-    }
-
-    if (createAccount) {
-      if (!email) {
-        nextErrors.email = "Informe um e-mail para criar a conta."
-      } else if (!validateEmail(email)) {
-        nextErrors.email = "Informe um e-mail valido."
-      }
-
-      if (password.length < 6) {
-        nextErrors.password = "A senha precisa ter pelo menos 6 caracteres."
+  useEffect(() => {
+    async function loadBarbershops() {
+      try {
+        const data = await apiFetch("/barbershop")
+        setBarbershops(Array.isArray(data) ? data : [])
+      } catch (loadError) {
+        setError(
+          loadError instanceof Error
+            ? loadError.message
+            : "Nao foi possivel carregar as barbearias.",
+        )
+      } finally {
+        setLoading(false)
       }
     }
 
-    setErrors(nextErrors)
-    return Object.keys(nextErrors).length === 0
-  }
+    void loadBarbershops()
+  }, [])
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-
-    if (!validateForm()) {
+  async function handleDetectLocation() {
+    if (typeof window === "undefined" || !("geolocation" in navigator)) {
+      setLocationState("Seu navegador nao oferece localizacao neste dispositivo.")
       return
     }
 
-    setLoading(true)
-    setMessage(null)
-    setErrors({})
+    setLocationState("Detectando sua localizacao...")
 
-    try {
-      if (createAccount) {
-        const data = await apiFetch("/customer-auth/register", {
-          method: "POST",
-          body: JSON.stringify({ name, phone, email, password }),
-        })
-
-        saveCustomerTokens(data.accessToken, data.refreshToken)
-        setMessage(
-          "Conta criada. A proxima etapa e conectar este fluxo ao endpoint de appointment para concluir a reserva.",
+    navigator.geolocation.getCurrentPosition(
+      () => {
+        setLocationState(
+          "Localizacao recebida. Assim que as unidades tiverem coordenadas cadastradas, a ordenacao por proximidade sera automatica.",
         )
-      } else {
-        await apiFetch("/customers", {
-          method: "POST",
-          body: JSON.stringify({ name, phone, email: email || undefined }),
-        })
-
-        setMessage(
-          "Cliente criado sem conta. O backend ja aceita nome e telefone para iniciar o agendamento.",
+      },
+      () => {
+        setLocationState(
+          "Nao foi possivel usar sua localizacao. Voce ainda pode escolher pela lista abaixo.",
         )
-      }
-    } catch (submitError) {
-      setErrors({
-        api:
-          submitError instanceof Error
-            ? submitError.message
-            : "Nao foi possivel continuar.",
-      })
-    } finally {
-      setLoading(false)
-    }
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 8000,
+      },
+    )
   }
+
+  const filteredBarbershops = useMemo(() => {
+    const normalizedSearch = normalizeText(search.trim())
+
+    if (!normalizedSearch) {
+      return barbershops.filter((barbershop) => barbershop.active)
+    }
+
+    return barbershops.filter((barbershop) => {
+      if (!barbershop.active) {
+        return false
+      }
+
+      const haystack = normalizeText(
+        `${barbershop.name} ${barbershop.address ?? ""} ${barbershop.phone ?? ""}`,
+      )
+
+      return haystack.includes(normalizedSearch)
+    })
+  }, [barbershops, search])
+
+  const selectedBarbershop = useMemo(() => {
+    const selectedSlug = searchParams.get("barbershop")
+
+    if (!selectedSlug) {
+      return null
+    }
+
+    return (
+      barbershops.find((barbershop) => barbershop.slug === selectedSlug) ?? null
+    )
+  }, [barbershops, searchParams])
 
   return (
     <main className="shell page-grid">
       <section className="page-card stack-lg">
         <div>
-          <span className="eyebrow">Agendamento</span>
-          <h1 className="title">Comece sem conta e ative o acesso se quiser voltar depois.</h1>
+          <span className="eyebrow">Acesso sem conta</span>
+          <h1 className="title">Entre como visitante e veja as barbearias disponiveis.</h1>
           <p className="subtitle">
-            O fluxo de entrada continua leve, mas agora usa o mesmo padrao de
-            formularios do restante do produto.
+            O login do cliente continua opcional. Primeiro escolha a unidade que
+            faz sentido para voce e depois decida se quer criar acesso.
           </p>
         </div>
 
-        <form className="stack-md" onSubmit={handleSubmit}>
-          <section className="section-card">
-            <p className="section-label">Dados iniciais</p>
+        <section className="section-card">
+          <p className="section-label">Buscar unidade</p>
 
-            <div className="form-grid">
-              <div className="field-group">
-                <label className="field-label" htmlFor="name">
-                  Nome
-                </label>
-                <div className={`input-wrap ${errors.name ? "has-error" : ""}`}>
-                  <input
-                    className="field-input"
-                    id="name"
-                    placeholder="Seu nome"
-                    value={name}
-                    onChange={(event) => setName(event.target.value)}
-                  />
-                </div>
-                {errors.name ? <p className="field-error">{errors.name}</p> : null}
-              </div>
-
-              <div className="field-group">
-                <label className="field-label" htmlFor="phone">
-                  Telefone
-                </label>
-                <div className={`input-wrap ${errors.phone ? "has-error" : ""}`}>
-                  <input
-                    className="field-input"
-                    id="phone"
-                    placeholder="(11) 99999-9999"
-                    value={phone}
-                    onChange={(event) => setPhone(event.target.value)}
-                  />
-                </div>
-                {errors.phone ? <p className="field-error">{errors.phone}</p> : null}
-              </div>
-
-              <div className="field-group">
-                <label className="field-label" htmlFor="email">
-                  E-mail opcional
-                </label>
-                <div className={`input-wrap ${errors.email ? "has-error" : ""}`}>
-                  <input
-                    className="field-input"
-                    id="email"
-                    placeholder="voce@exemplo.com"
-                    type="email"
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                  />
-                </div>
-                {errors.email ? <p className="field-error">{errors.email}</p> : null}
-              </div>
-            </div>
-          </section>
-
-          <section className="section-card">
-            <p className="section-label">Conta opcional</p>
-
-            <div className="stack-md">
-              <label className="toggle-card">
-                <input
-                  checked={createAccount}
-                  type="checkbox"
-                  onChange={(event) => setCreateAccount(event.target.checked)}
-                />
-                <span>
-                  <strong>Criar conta agora</strong>
-                  <span>Ative um login de cliente para retornar mais rapido nas proximas reservas.</span>
-                </span>
+          <div className="stack-md">
+            <div className="field-group">
+              <label className="field-label" htmlFor="search">
+                Nome, endereco ou telefone
               </label>
-
-              {createAccount ? (
-                <div className="field-group">
-                  <label className="field-label" htmlFor="password">
-                    Senha
-                  </label>
-                  <div className={`input-wrap ${errors.password ? "has-error" : ""}`}>
-                    <input
-                      className="field-input"
-                      id="password"
-                      placeholder="Minimo de 6 caracteres"
-                      type="password"
-                      value={password}
-                      onChange={(event) => setPassword(event.target.value)}
-                    />
-                  </div>
-                  {errors.password ? (
-                    <p className="field-error">{errors.password}</p>
-                  ) : null}
-                </div>
-              ) : null}
+              <div className="input-wrap">
+                <input
+                  className="field-input"
+                  id="search"
+                  placeholder="Ex.: Centro, Paulista ou nome da barbearia"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                />
+              </div>
             </div>
-          </section>
 
-          {message ? <div className="success">{message}</div> : null}
-          {errors.api ? <div className="error">{errors.api}</div> : null}
+            <div className="location-box">
+              <div>
+                <strong>Barbearias proximas</strong>
+                <p>{locationState}</p>
+              </div>
+              <button className="secondary-btn" type="button" onClick={handleDetectLocation}>
+                Usar localizacao
+              </button>
+            </div>
+          </div>
+        </section>
 
-          <button className="primary-btn" disabled={loading} type="submit">
-            {loading ? "Salvando..." : "Continuar"}
-          </button>
-        </form>
+        {loading ? <div className="message">Carregando barbearias...</div> : null}
+        {error ? <div className="error">{error}</div> : null}
+        {selectedBarbershop ? (
+          <div className="success">
+            <strong>{selectedBarbershop.name}</strong>
+            <div>
+              Unidade escolhida para seguir como visitante. O proximo passo pode
+              conectar essa escolha ao fluxo de agendamento.
+            </div>
+          </div>
+        ) : null}
+
+        {!loading && !error ? (
+          <div className="barbershop-list">
+            {filteredBarbershops.length ? (
+              filteredBarbershops.map((barbershop) => (
+                <article key={barbershop.id} className="barbershop-card">
+                  <div className="stack-md">
+                    <div>
+                      <h2 className="card-title">{barbershop.name}</h2>
+                      <p className="card-copy">
+                        {barbershop.address ?? "Endereco ainda nao informado."}
+                      </p>
+                    </div>
+
+                    <div className="meta-list compact">
+                      <div className="meta-item">
+                        <strong>Contato</strong>
+                        {barbershop.phone ?? "Telefone indisponivel"}
+                      </div>
+                      <div className="meta-item">
+                        <strong>Acesso</strong>
+                        Atendimento disponivel sem criar conta
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="actions-row">
+                    <Link className="nav-link-primary" href={`/book?barbershop=${barbershop.slug}`}>
+                      Escolher unidade
+                    </Link>
+                    <Link className="nav-link" href="/auth/register">
+                      Criar conta depois
+                    </Link>
+                  </div>
+                </article>
+              ))
+            ) : (
+              <div className="message">
+                Nenhuma barbearia encontrada com esse filtro no momento.
+              </div>
+            )}
+          </div>
+        ) : null}
       </section>
 
       <aside className="page-card stack-md">
-        <span className="eyebrow">Atalhos</span>
+        <span className="eyebrow">Como funciona</span>
         <div className="info-box">
-          <strong>Ja tenho conta</strong>
-          <p>Entre para consultar seus dados e pular a etapa de criacao de acesso.</p>
+          <strong>1. Explore sem login</strong>
+          <p>O cliente pode entrar como visitante e descobrir a unidade ideal primeiro.</p>
         </div>
         <div className="info-box">
-          <strong>Perfil do cliente</strong>
-          <p>Depois do login, o cliente pode revisar os dados salvos no portal.</p>
+          <strong>2. Escolha a barbearia</strong>
+          <p>Endereco e contato ficam visiveis antes de qualquer criacao de conta.</p>
+        </div>
+        <div className="info-box">
+          <strong>3. Crie acesso so se quiser voltar depois</strong>
+          <p>O login passa a ser util para historico, perfil e proximos agendamentos.</p>
         </div>
         <div className="actions-row">
           <Link className="secondary-btn" href="/auth/login">
             Ja tenho conta
           </Link>
-          <Link className="secondary-btn" href="/account">
-            Ver meu perfil
+          <Link className="secondary-btn" href="/auth/register">
+            Criar conta
           </Link>
         </div>
       </aside>
