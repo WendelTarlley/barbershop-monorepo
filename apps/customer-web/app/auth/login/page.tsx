@@ -76,7 +76,8 @@ export default function CustomerLoginPage() {
           <h1 className="title">Entre para acompanhar seu cadastro.</h1>
           <p className="subtitle">
             Use seu login de cliente para revisar os dados e seguir mais rapido
-            nos proximos atendimentos.
+            nos proximos atendimentos. Se preferir, voce tambem pode entrar sem
+            conta para ver as barbearias disponiveis primeiro.
           </p>
         </div>
 
@@ -139,7 +140,7 @@ export default function CustomerLoginPage() {
             Criar conta
           </Link>
           <Link className="secondary-btn" href="/book">
-            Seguir sem conta
+            Ver barbearias sem conta
           </Link>
         </div>
       </section>
