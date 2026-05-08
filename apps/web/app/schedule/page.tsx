@@ -5,7 +5,7 @@ import { useMemo, useState } from 'react';
 import { apiClient } from '@/lib/apiClient';
 import { BookingModal } from './BookingModal';
 import { ScheduleView } from './schedule';
-import { getTodayKey, VIEW_LABELS, shiftDate, formatRangeLabel } from './schedule-utils';
+import { getTodayKey, VIEW_LABELS, shiftDate, formatSelectedPeriod } from './schedule-utils';
 import { LoadingState, MonthCalendar, DetailedCalendar, EmptyState } from './ScheduleCalendar';
 import { useSchedule, useBookingForm, useBookingOptions, useDateTimeOptions, useAvailability } from './useSchedule';
 
@@ -174,7 +174,7 @@ export default function SchedulePage() {
           </div>
 
           <div className="flex flex-col gap-3 lg:min-w-[420px] lg:items-end">
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid w-full grid-cols-3 gap-2 lg:max-w-[360px]">
               {(Object.keys(VIEW_LABELS) as ScheduleView[]).map((option) => (
                 <button
                   key={option}
@@ -191,45 +191,61 @@ export default function SchedulePage() {
               ))}
             </div>
 
-            <button
-              type="button"
-              onClick={openBooking}
-              className="w-full rounded-2xl bg-amber-400 px-4 py-3 text-sm font-semibold text-zinc-950 hover:bg-amber-300"
-            >
-              Realizar agendamento
-            </button>
-
-            <div className="grid grid-cols-3 gap-2">
-              <button
-                type="button"
-                onClick={() => setSelectedDate(shiftDate(selectedDate, view, -1))}
-                className="rounded-2xl border border-zinc-700 px-3 py-3 text-sm text-zinc-300 hover:border-zinc-500 hover:text-white"
-              >
-                Anterior
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedDate(getTodayKey())}
-                className="rounded-2xl border border-zinc-700 px-3 py-3 text-sm text-zinc-300 hover:border-zinc-500 hover:text-white"
-              >
-                Hoje
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedDate(shiftDate(selectedDate, view, 1))}
-                className="rounded-2xl border border-zinc-700 px-3 py-3 text-sm text-zinc-300 hover:border-zinc-500 hover:text-white"
-              >
-                Proximo
-              </button>
+            <div className="w-full rounded-[24px] border border-amber-400/15 bg-zinc-950/80 p-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.22em] text-amber-300/80">
+                    Acao principal
+                  </p>
+                  <p className="mt-1 text-sm text-zinc-400">
+                    Registre um novo horario sem perder o contexto da agenda.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={openBooking}
+                  className="w-full rounded-2xl bg-amber-400 px-4 py-3 text-sm font-semibold text-zinc-950 hover:bg-amber-300 sm:w-auto sm:min-w-[220px]"
+                >
+                  Realizar agendamento
+                </button>
+              </div>
             </div>
 
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-950/80 px-4 py-3">
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(event) => setSelectedDate(event.target.value)}
-                className="w-full bg-transparent text-sm text-zinc-200 outline-none"
-              />
+            <div className="grid w-full gap-2 lg:max-w-[420px]">
+              <div className="grid grid-cols-[1fr_auto] gap-2">
+                <div className="rounded-2xl border border-zinc-800 bg-zinc-950/80 px-4 py-3">
+                  <input
+                    type="date"
+                    value={selectedDate}
+                    onChange={(event) => setSelectedDate(event.target.value)}
+                    className="w-full bg-transparent text-sm text-zinc-200 outline-none"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedDate(getTodayKey())}
+                  className="rounded-2xl border border-zinc-700 px-4 py-3 text-sm text-zinc-300 hover:border-zinc-500 hover:text-white"
+                >
+                  Hoje
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedDate(shiftDate(selectedDate, view, -1))}
+                  className="rounded-2xl border border-zinc-800 bg-zinc-950/50 px-3 py-2.5 text-sm text-zinc-400 hover:border-zinc-600 hover:text-white"
+                >
+                  Anterior
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedDate(shiftDate(selectedDate, view, 1))}
+                  className="rounded-2xl border border-zinc-800 bg-zinc-950/50 px-3 py-2.5 text-sm text-zinc-400 hover:border-zinc-600 hover:text-white"
+                >
+                  Proximo
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -237,9 +253,11 @@ export default function SchedulePage() {
         {data ? (
           <div className="mt-4 grid grid-cols-1 gap-2 text-xs text-zinc-400 sm:grid-cols-3">
             <span className="rounded-2xl bg-zinc-800 px-3 py-2">
+              Contexto: {formatSelectedPeriod(data)}
+            </span>
+            <span className="rounded-2xl bg-zinc-800 px-3 py-2">
               Buffer padrao: {data.bufferMinutes} min
             </span>
-            <span className="rounded-2xl bg-zinc-800 px-3 py-2">{formatRangeLabel(data)}</span>
             <span className="rounded-2xl bg-zinc-800 px-3 py-2">
               {data.barbers.length} barbeiros
             </span>
@@ -262,7 +280,7 @@ export default function SchedulePage() {
           view === 'month' ? (
             <MonthCalendar data={data} />
           ) : (
-            <DetailedCalendar data={data} dayMap={dayMap} />
+            <DetailedCalendar data={data} dayMap={dayMap} onCreateBooking={openBooking} />
           )
         ) : (
           <EmptyState />

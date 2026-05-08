@@ -11,9 +11,11 @@ import { getAppointmentsForDate, formatTimeRange, getStatusLabel, getDurationMin
 export function DetailedCalendar({
   data,
   dayMap,
+  onCreateBooking,
 }: {
   data: ScheduleResponse;
   dayMap: Map<string, ScheduleResponse['days'][number]>;
+  onCreateBooking: () => void;
 }) {
   return (
     <div className="flex-1 space-y-3 pb-20">
@@ -42,7 +44,7 @@ export function DetailedCalendar({
                   {appointmentsCount} agendamentos no dia
                 </p>
               </div>
-              {day.isToday ? (
+              {day.isToday && data.days.length > 1 ? (
                 <span className="rounded-full bg-amber-400/15 px-3 py-1 text-[11px] font-medium text-amber-300">
                   Hoje
                 </span>
@@ -60,11 +62,26 @@ export function DetailedCalendar({
                 ))}
               </div>
             ) : (
-              <div className="rounded-2xl border border-dashed border-zinc-800 px-4 py-8 text-center">
-                <p className="text-sm font-medium text-zinc-300">Nenhum agendamento neste dia</p>
-                <p className="mt-1 text-xs text-zinc-500">
-                  Os barbeiros aparecem somente quando tiverem atendimento na data exibida.
+              <div className="rounded-[20px] border border-dashed border-zinc-700 bg-zinc-950/60 px-4 py-8 text-center">
+                <p className="text-sm font-semibold text-zinc-100">
+                  Nenhum agendamento neste dia
                 </p>
+                <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-zinc-400">
+                  A agenda esta vazia por enquanto. Use o botao de agendamento para registrar o
+                  primeiro horario desta data.
+                </p>
+                <div className="mt-4 flex flex-col items-center gap-2 sm:flex-row sm:justify-center">
+                  <button
+                    type="button"
+                    onClick={onCreateBooking}
+                    className="rounded-2xl bg-amber-400 px-4 py-2.5 text-sm font-semibold text-zinc-950 hover:bg-amber-300"
+                  >
+                    Realizar agendamento
+                  </button>
+                  <span className="text-xs text-zinc-500">
+                    Os barbeiros voltam a aparecer assim que houver horarios marcados.
+                  </span>
+                </div>
               </div>
             )}
           </section>
