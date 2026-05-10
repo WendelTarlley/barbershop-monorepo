@@ -180,7 +180,11 @@ export class AuthService {
       throw new BadRequestException("First access, check your email")
     }
 
-    const passwordMatch = await argon2.verify(user.password!, password)
+    if (!user.password) {
+      throw new UnauthorizedException("Invalid credentials")
+    }
+
+    const passwordMatch = await argon2.verify(user.password, password)
 
     if (!passwordMatch) {
       throw new UnauthorizedException("Invalid credentials")
