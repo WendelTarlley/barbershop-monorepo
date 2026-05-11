@@ -25,8 +25,16 @@ export type GetBarbersResult = {
   totalBarbers: number;
 };
 
-export async function getBarbers(): Promise<GetBarbersResult> {
-  const response = await api.get<BarberApiItem[]>('/user/barbers');
+type GetBarbersOptions = {
+  token?: string;
+};
+
+export async function getBarbers(
+  options: GetBarbersOptions = {},
+): Promise<GetBarbersResult> {
+  const response = await api.get<BarberApiItem[]>('/user/barbers', {
+    token: options.token,
+  });
 
   const barbers = response.map((barber) => ({
     id: barber.id,
