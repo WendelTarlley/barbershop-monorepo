@@ -21,8 +21,9 @@
 - Depois da validacao, sempre criar um commit com uma mensagem objetiva.
 - Em seguida, sempre fazer push da branch atual sem precisar pedir confirmacao adicional.
 - So nao fazer commit/push se o usuario disser explicitamente para nao subir.
+- Sempre apos fazer o push de uma alteracao a partir de uma worktree dedicada, excluir a worktree utilizada.
 - When starting a new session or switching to a new task context, create a dedicated git worktree before editing so unrelated changes do not mix in the same workspace.
-- After pushing a PR from a dedicated worktree, always ask whether the worktree can or should be deleted.
+- After pushing a PR from a dedicated worktree, delete the worktree that was used unless the user explicitly asks to keep it.
 - When a rule is app-specific, define it in the nearest `AGENTS.md` inside that app.
 
 ## Cross-App Boundaries
