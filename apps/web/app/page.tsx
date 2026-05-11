@@ -1,67 +1,23 @@
 import GestaoCard from "@/components/GestãoCard"
-import { BARBERSHOP_HEADER } from "@/lib/auth"
 import { requireAuth } from "@/lib/serverAuth"
 import { getBarbers } from "@actions/barbers"
+import { getServices } from "@actions/services"
 
 type HomeStats = {
   barbers: number
   services: number
 }
 
-function getApiBaseUrl() {
-  return process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000/api"
-}
-
-function getBarbershopIdFromToken(token: string) {
-  try {
-    const [, payload = ""] = token.split(".")
-    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/")
-    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=")
-    const decodedPayload = Buffer.from(padded, "base64").toString("utf-8")
-    const parsedPayload = JSON.parse(decodedPayload) as {
-      barbershopId?: string
-    }
-
-    return parsedPayload.barbershopId ?? null
-  } catch {
-    return null
-  }
-}
-
 async function getHomeStats(token: string): Promise<HomeStats> {
-  const apiBaseUrl = getApiBaseUrl()
-  const headers = new Headers({
-    Authorization: `Bearer ${token}`,
-  })
-  const barbershopId = getBarbershopIdFromToken(token)
-
-  if (barbershopId) {
-    headers.set(BARBERSHOP_HEADER, barbershopId)
-  }
-
   try {
-    const { totalBarbers } = await getBarbers()
-    const [barbersResponse, servicesResponse] = await Promise.all([
-      fetch(`${apiBaseUrl}/user/barbers`, {
-        headers,
-        cache: "no-store",
-      }),
-      fetch(`${apiBaseUrl}/barbershop-service`, {
-        headers,
-        cache: "no-store",
-      }),
+    const [{ totalBarbers }, { totalServices }] = await Promise.all([
+      getBarbers({ token }),
+      getServices({ token }),
     ])
-
-    const barbersJson = barbersResponse.ok
-      ? ((await barbersResponse.json()) as unknown[])
-      : [];
-    const servicesJson = servicesResponse.ok
-      ? ((await servicesResponse.json()) as unknown[])
-      : [];
 
     return {
       barbers: totalBarbers,
-      services: servicesJson.length,
+      services: totalServices,
     }
   } catch {
     return {
