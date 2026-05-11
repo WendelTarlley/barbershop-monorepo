@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useCallback } from "react";
 
 import {
@@ -32,7 +32,6 @@ function getCookie(name: string): string | null {
 
 export function useAuth() {
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   const saveAuthAndRedirect = useCallback(
     (tokens: Partial<Record<string, string>>, defaultRedirect = "/") => {
@@ -42,10 +41,11 @@ export function useAuth() {
         }
       });
 
-      const redirectTo = searchParams.get("redirect") ?? defaultRedirect;
+      const redirectTo =
+        new URLSearchParams(window.location.search).get("redirect") ?? defaultRedirect;
       router.replace(redirectTo);
     },
-    [router, searchParams]
+    [router]
   );
 
   const logout = useCallback(() => {

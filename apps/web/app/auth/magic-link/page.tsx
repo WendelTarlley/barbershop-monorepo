@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { apiClient } from "@/lib/apiClient";
 
 type Status = "loading" | "error_expired" | "error_used" | "error_generic";
@@ -28,16 +28,18 @@ function mapLinkError(data: unknown): Exclude<Status, "loading"> {
 
 export default function MagicLinkPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const token = searchParams.get("token");
-  const [status, setStatus] = useState<Status>(token ? "loading" : "error_generic");
+  const [status, setStatus] = useState<Status>("loading");
 
   useEffect(() => {
-    if (!token) {
+    const searchParams = new URLSearchParams(window.location.search);
+    const currentToken = searchParams.get("token");
+
+    if (!currentToken) {
+      setStatus("error_generic");
       return;
     }
 
-    const magicToken = token;
+    const magicToken = currentToken;
 
     async function validateMagicLink() {
       try {
@@ -60,7 +62,7 @@ export default function MagicLinkPage() {
     }
 
     void validateMagicLink();
-  }, [router, token]);
+  }, [router]);
 
   const errors: Record<Exclude<Status, "loading">, { title: string; description: string }> = {
     error_expired: {

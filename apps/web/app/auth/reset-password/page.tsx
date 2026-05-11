@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
 
 import { useAuth } from "@/hooks/useAuth";
 import { apiClient } from "@/lib/apiClient";
@@ -50,7 +49,6 @@ function mapLinkError(data: unknown): Exclude<Status, "loading" | "form"> {
 }
 
 export default function ResetPasswordPage() {
-  const searchParams = useSearchParams();
   const { saveAuthAndRedirect } = useAuth();
   const [status, setStatus] = useState<Status>("loading");
   const [tempToken, setTempToken] = useState<string | null>(null);
@@ -64,6 +62,7 @@ export default function ResetPasswordPage() {
   const strength = useMemo(() => getPasswordStrength(password), [password]);
 
   useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
     const token = searchParams.get("token");
 
     if (!token) {
@@ -94,7 +93,7 @@ export default function ResetPasswordPage() {
     }
 
     void validateLink();
-  }, [searchParams]);
+  }, []);
 
   function validate(): boolean {
     const nextErrors: FieldError = {};
