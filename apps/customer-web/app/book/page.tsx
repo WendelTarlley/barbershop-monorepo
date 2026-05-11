@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
-import { useEffect, useMemo, useState } from "react"
+import { Suspense, useEffect, useMemo, useState } from "react"
 
 import { apiFetch } from "@/lib/api"
 
@@ -22,7 +22,7 @@ function normalizeText(value: string) {
     .toLowerCase()
 }
 
-export default function BookPage() {
+function BookPageContent() {
   const searchParams = useSearchParams()
   const [barbershops, setBarbershops] = useState<Barbershop[]>([])
   const [search, setSearch] = useState("")
@@ -219,5 +219,38 @@ export default function BookPage() {
         </div>
       </aside>
     </main>
+  )
+}
+
+function BookPageFallback() {
+  return (
+    <main className="shell page-grid">
+      <section className="page-card stack-lg">
+        <div>
+          <span className="eyebrow">Acesso sem conta</span>
+          <h1 className="title">Entre como visitante e veja as barbearias disponiveis.</h1>
+          <p className="subtitle">
+            Estamos preparando as unidades disponiveis para voce continuar o agendamento.
+          </p>
+        </div>
+
+        <div className="message">Carregando barbearias...</div>
+      </section>
+
+      <aside className="page-card stack-md">
+        <div className="info-box">
+          <strong>Acesso opcional</strong>
+          <p>Escolha a unidade primeiro. A conta pode ser criada depois.</p>
+        </div>
+      </aside>
+    </main>
+  )
+}
+
+export default function BookPage() {
+  return (
+    <Suspense fallback={<BookPageFallback />}>
+      <BookPageContent />
+    </Suspense>
   )
 }
