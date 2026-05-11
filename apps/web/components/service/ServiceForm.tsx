@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 
 import { apiClient } from '@/lib/apiClient';
 
@@ -21,18 +21,27 @@ type ServiceFormProps = {
 
 export default function ServiceForm({ mode, serviceId }: ServiceFormProps) {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [values, setValues] = useState<ServiceFormValues>(
     EMPTY_SERVICE_FORM_VALUES,
   );
   const [errors, setErrors] = useState<ServiceFormErrors>({});
   const [isLoading, setIsLoading] = useState(mode === 'edit');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [statusMessage, setStatusMessage] = useState<string | null>(
-    mode === 'edit' && searchParams.get('created') === '1'
-      ? 'Servico cadastrado. Agora voce pode revisar e ajustar os dados.'
-      : null,
-  );
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (mode !== 'edit') {
+      return;
+    }
+
+    const created = new URLSearchParams(window.location.search).get('created');
+
+    if (created === '1') {
+      setStatusMessage(
+        'Servico cadastrado. Agora voce pode revisar e ajustar os dados.',
+      );
+    }
+  }, [mode]);
 
   useEffect(() => {
     if (mode !== 'edit' || !serviceId) {
