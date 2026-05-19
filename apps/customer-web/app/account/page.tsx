@@ -20,7 +20,7 @@ export default function AccountPage() {
   useEffect(() => {
     async function loadProfile() {
       try {
-        const data = await apiFetch("/customer-auth/me", { auth: true })
+        const data = await apiFetch<CustomerProfile>("/customer-auth/me", { auth: true })
         setProfile(data)
       } catch (loadError) {
         setError(

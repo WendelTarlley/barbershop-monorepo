@@ -14,6 +14,11 @@ type FieldErrors = {
   api?: string
 }
 
+type CustomerAuthResponse = {
+  accessToken: string
+  refreshToken: string
+}
+
 function validateEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 }
@@ -61,7 +66,7 @@ export default function CustomerRegisterPage() {
     setErrors({})
 
     try {
-      const data = await apiFetch("/customer-auth/register", {
+      const data = await apiFetch<CustomerAuthResponse>("/customer-auth/register", {
         method: "POST",
         body: JSON.stringify({ name, phone, email, password }),
       })
@@ -92,7 +97,7 @@ export default function CustomerRegisterPage() {
           </p>
         </div>
 
-        <form className="stack-md" onSubmit={handleSubmit}>
+        <form className="stack-md" onSubmit={(event) => void handleSubmit(event)}>
           <section className="section-card">
             <p className="section-label">Dados de acesso</p>
 

@@ -1,9 +1,15 @@
 const RAW_API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000"
 const ACCESS_TOKEN_KEY = "@barbershop:customer-token"
 const REFRESH_TOKEN_KEY = "@barbershop:customer-refresh-token"
+const BARBERSHOP_HEADER = "X-Barbershop-Id"
 
 type ApiOptions = RequestInit & {
   auth?: boolean
+  barbershopId?: string
+}
+
+type ApiErrorPayload = {
+  message?: string | string[]
 }
 
 function getApiUrl() {
@@ -16,19 +22,61 @@ function getApiUrl() {
   return `${normalizedApiUrl}/api`
 }
 
-export async function apiFetch(path: string, options: ApiOptions = {}) {
+function getStoredToken(key: string) {
+  if (typeof window === "undefined") {
+    return null
+  }
+
+  return window.localStorage.getItem(key)
+}
+
+function parseResponseBody(text: string): unknown {
+  if (!text) {
+    return null
+  }
+
+  try {
+    return JSON.parse(text) as unknown
+  } catch {
+    return text
+  }
+}
+
+function getErrorMessage(data: unknown) {
+  if (!data || typeof data !== "object") {
+    return "Request failed."
+  }
+
+  const { message } = data as ApiErrorPayload
+
+  if (typeof message === "string" && message.trim()) {
+    return message
+  }
+
+  if (Array.isArray(message) && typeof message[0] === "string") {
+    return message[0]
+  }
+
+  return "Request failed."
+}
+
+export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promise<T> {
   const headers = new Headers(options.headers ?? {})
 
   if (!headers.has("Content-Type") && !(options.body instanceof FormData)) {
     headers.set("Content-Type", "application/json")
   }
 
-  if (options.auth && typeof window !== "undefined") {
-    const token = window.localStorage.getItem(ACCESS_TOKEN_KEY)
+  if (options.auth) {
+    const token = getStoredToken(ACCESS_TOKEN_KEY)
 
     if (token) {
       headers.set("Authorization", `Bearer ${token}`)
     }
+  }
+
+  if (options.barbershopId?.trim()) {
+    headers.set(BARBERSHOP_HEADER, options.barbershopId.trim())
   }
 
   const response = await fetch(`${getApiUrl()}${path}`, {
@@ -37,16 +85,13 @@ export async function apiFetch(path: string, options: ApiOptions = {}) {
   })
 
   const text = await response.text()
-  const data = text ? JSON.parse(text) : null
+  const data = parseResponseBody(text)
 
   if (!response.ok) {
-    const message =
-      (data && typeof data.message === "string" && data.message) ||
-      "Request failed."
-    throw new Error(message)
+    throw new Error(getErrorMessage(data))
   }
 
-  return data
+  return data as T
 }
 
 export function saveCustomerTokens(accessToken: string, refreshToken: string) {
